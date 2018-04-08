@@ -1,0 +1,126 @@
+<template>
+    <div id="home">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list @hoverItem="hoverItem"></project-list>
+            <div class="nav-right view row-container">
+                <div class="page-title">
+                    <span v-if="project.location">{{project.name + '所在地'}}</span>
+                    <span v-else>项目所在地</span>
+                    <span v-if="project.location">{{'：' + project.location}}</span>
+                </div>
+                <div id="container">
+                    <div id="map-container">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</template>
+<script>
+    import headTop from '../../Header.vue'
+    import footerBottom from '../../Footer.vue'
+    import topNav from '../../TopNav.vue'
+    import projectList from './ProjectList.vue'
+	import AMap from 'AMap'
+
+	export default {
+		data() {
+			return {
+				map: {},
+				markers: [],
+				geocoder: '',
+				currentId: '',
+				project: {}
+			}
+		},
+		components: {
+            headTop,
+            footerBottom,
+            topNav,
+            projectList,
+		},
+		mounted() {
+			var self = this;
+			self.init();
+		},
+
+		methods: {
+			init: function () {
+				var self = this;
+				//创建map，默认中心:南京
+				self.map = new AMap.Map('container', {
+					resizeEnable: true,
+					dragEnable: true,
+					keyboardEnable: true,
+					doubleClickZoom: true,
+					zoom: 6,
+					center: [118.7964700000, 32.0583800000]
+				});
+
+				//map小插件
+				AMap.plugin(['AMap.ToolBar', 'AMap.Scale', 'AMap.OverView'],
+					function () {
+						self.map.addControl(new AMap.ToolBar());
+						self.map.addControl(new AMap.Scale());
+						self.map.addControl(new AMap.OverView({
+							isOpen: true
+						}));
+					});
+				//map城市插件
+				AMap.plugin('AMap.Geocoder', function () {
+					self.geocoder = new AMap.Geocoder({
+						//city默认：“全国”
+					});
+				});
+
+				self.map.setFitView();
+			},
+
+			hoverItem(item) {
+				var self = this;
+				//防止重复显示
+				if (item.id === self.currentId) {
+					return;
+				}
+				this.project = item;
+				self.map.remove(self.markers);
+				var cityName = item.location;
+				self.geocoder.getLocation(cityName, function (status, result) {
+					if (status == 'complete' && result.geocodes.length) {
+						var ProjectLocation = [result.geocodes[0].location.getLng(), result.geocodes[0].location.getLat()];
+						var marker = new AMap.Marker({
+							position: ProjectLocation,
+							map: self.map
+						});
+						self.map.setZoomAndCenter(6, ProjectLocation);
+						marker.setAnimation('AMAP_ANIMATION_BOUNCE');
+						self.markers.push(marker);
+					}
+					else{
+						self.map.remove(self.markers);
+                    }
+					//根据城市名获取id，定位和添加弹跳标志
+					self.currentId = item.id;
+				});
+			},
+		}
+	}
+</script>
+<style>
+    #container {
+        margin-left: 300px;
+        margin-top: 120px;
+        width: calc(100% - 300px);
+        height: calc(100% - 120px);
+        overflow: hidden;
+    }
+
+    .pro-head {
+        position: absolute;
+        z-index: 300;
+        margin-top: -10px;
+    }
+</style>

@@ -1,0 +1,298 @@
+<template>
+    <div id="addProject">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div id="add-container">
+            <el-form :model="form" :rules="rules" ref="addForm">
+                <el-form-item>
+                    <el-row>
+                        <el-col :span="24">
+                            <div class="grid-content bg-purple-dark add-bg-title">新增项目</div>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <span class="add-mid-title">基本信息:</span>
+                    </el-row>
+                </el-form-item>
+
+                <el-row>
+                    <el-form-item :span="5" prop="proName" class="el-item">
+                        <el-col :span="1" class="add-xm-title">项目名称: </el-col>
+                        <el-col :span="4" class="add-input">
+                            <el-input v-model="form.proName" size="small" placeholder="请输入项目名称" clearable></el-input>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item prop="proBuildingSize" class="el-item">
+                        <el-col :span="1" class="add-xm-title">建筑面积: </el-col>
+                        <el-col :span="4" class="add-input">
+                            <el-input v-model="form.proBuildingSize" size="small" placeholder="请输入建筑面积(M²)"
+                                      clearable></el-input>
+                        </el-col>
+                    </el-form-item>
+                </el-row>
+                <el-row>
+                    <el-form-item prop="proLocation" class="el-item">
+                        <el-col :span="1" class="add-xm-title">项目地点: </el-col>
+                        <el-col :span="4" class="add-input">
+                            <el-input v-model="form.proLocation" size="small" placeholder="请输入项目地点(城市)"
+                                      clearable></el-input>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item prop="proBuildingType" class="el-item">
+                        <el-col :span="1" class="add-xm-title">建筑类型: </el-col>
+                        <el-col :span="4" class="add-input">
+                            <el-input v-model="form.proBuildingType" size="small" placeholder="请输入建筑类型"
+                                      clearable></el-input>
+                        </el-col>
+                    </el-form-item>
+                </el-row>
+                <div id="xlsx">
+                    <input @change="readFile" type="file" id="xlf"/>
+                    <!--<section>{{result}}</section>-->
+                </div>
+                <!-- <el-button type="file" plain @click="fileOnLoad">上传特征值Excel</el-button>-->
+                <el-form-item prop="tableData">
+                    <el-table :data="tableData" v-model="form.tableData" class="add-tab" stripe max-height="250"
+                              style="width: 850px">
+                        <el-table-column prop="time" label="时间" width="150"></el-table-column>
+                        <el-table-column prop="tgo" :render-header="renderHeader1" width="110"></el-table-column>
+                        <el-table-column prop="tg" :render-header="renderHeader2" width="110"></el-table-column>
+                        <el-table-column prop="a" label="α" width="110"></el-table-column>
+                        <el-table-column prop="n" label="η" width="110"></el-table-column>
+                        <el-table-column prop="cop" label="COP" width="110"></el-table-column>
+                        <el-table-column prop="eer" label="EER" width="110"></el-table-column>
+                    </el-table>
+                </el-form-item>
+                <div class="add-btns">
+                    <el-button type="primary" plain @click="onSubmit('addForm')">提交</el-button>
+                    <router-link :to="{path: '/home'}">
+                        <el-button plain>返回</el-button>
+                    </router-link>
+                </div>
+            </el-form>
+        </div>
+
+        <footer-bottom></footer-bottom>
+    </div>
+</template>
+<script></script>
+<script>
+	import headTop from '../../Header.vue'
+	import footerBottom from '../../Footer.vue'
+	import topNav from '../../TopNav.vue'
+	import ElCol from "element-ui/packages/col/src/col"
+	import xlsx from 'xlsx'
+	import axios from 'axios'
+
+	export default {
+		data() {
+			return {
+				form: {
+					proName: '',
+					proBuildingSize: '',
+					proLocation: '',
+					proBuildingType: '',
+					tableData: []
+				},
+				project: {
+					name: '',
+					buildingSize: '',
+					location: '',
+					buildingType: ''
+				},
+				rules: {
+					proName: [
+						{required: true, message: '请输入项目名称', trigger: 'blur'},
+					],
+					proBuildingSize: [
+						{required: true, message: '请输入建筑面积', trigger: 'blur'},
+					],
+					proLocation: [
+						{required: true, message: '请输入项目地点', trigger: 'blur'},
+					],
+					proBuildingType: [
+						{required: true, message: '请输入建筑类型', trigger: 'blur'},
+					]
+				},
+				result: {},
+				tableData: [/*{
+                date: '2016-05-02',
+                arg1: '5.5',
+                arg2: '5.5',
+                arg3: '5.5',
+                arg4: '5.5',
+                arg5: '5.5',
+                arg6: '5.5',
+                arg7: '5.5'
+            }, {
+                date: '2016-05-04',
+                arg1: '2.6',
+                arg2: '2.6',
+                arg3: '2.6',
+                arg4: '2.6',
+                arg5: '2.6',
+                arg6: '2.6',
+                arg7: '2.6'
+            }*/]
+			}
+		},
+		components: {
+			ElCol,
+			headTop,
+			footerBottom,
+			topNav,
+		},
+		methods: {
+			/*fileOnLoad() {
+
+			},*/
+			onSubmit(formName) {
+				axios.post('http://localhost:8080/Home', {
+					proName: this.proName,
+					proBuildingSize: this.proBuildingSize,
+					proLocation: this.proLocation,
+					proBuildingType: this.proBuildingType,
+					table: this.tableData
+				}).then((response) => {
+					console.log(response);
+					this.$router.push('/Home');
+				})
+			},
+			readFile(event) {
+				var self = this;
+				let file = event.target.files;
+				let name = file[0].name;
+				let result = {};
+				let arr;
+				let newArr = [];
+				name = name.split('.').slice(0, -1).join('');
+				//读取excel文件数据
+				let fileReader = new FileReader();
+				fileReader.onload = (ev) => {
+					try {
+						let data = ev.target.result;
+						let workbook = xlsx.read(data, {type: 'binary'});
+						workbook.SheetNames.forEach((sheetName) => {
+							let roa = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
+							if (roa.length) {
+								result[sheetName] = roa;
+								for (let i = 0; i < sheetName; i++) {
+									//	console.log(result[sheetName]);
+								}
+							}
+						})
+						this.result = result[workbook.SheetNames[0]];
+						arr = result[workbook.SheetNames[0]];
+						var objKey = workbook.SheetNames[0];
+						var eValue = eval('arr.' + 'objKey');
+						//数据格式转化为elementUI规定的table数据
+						for (var i = 1; i < arr.length; i++) {
+							var newObj = {};
+							for (var j = 0; j < arr[0].length; j++) {
+								newObj[arr[0][j]] = arr[i][j];
+							}
+							console.log('newObj:' + JSON.stringify(newObj));
+							console.log(typeof(newObj));
+							//将拼接好的字符串push到数组中
+							newArr.push(newObj);
+							newObj = "";
+						}
+						console.log(typeof(newArr));
+						console.log('最终结果' + JSON.stringify(newArr));
+						this.tableData = newArr;
+					} catch (e) {
+						this.$message({
+							message: '文件格式不对',
+							type: 'warning'
+						});
+					}
+					/*axios.post('120.79.84.167:3000/project', {
+						proName: self.proName,
+						proBuildingSize: self.proBuildingSize,
+						proLocation: self.proLocation,
+						proBuildingType: self.proBuildingType,
+						table: this.result
+					}).then((response) => {
+						console.log(response);
+						self.$router.push('/Home');
+					})*/
+				}
+				fileReader.readAsBinaryString(file[0]);
+			},
+			renderHeader1(createElement, {column, $index}) {
+				return createElement(
+					'span',
+					{
+						'class': ''
+					},
+					['t',
+						createElement('sub', {
+								attrs: {type: 'text'},
+
+							}, ['g,o']
+						)
+					]
+				);
+			},
+
+			renderHeader2(createElement, {column, $index}) {
+				return createElement(
+					'span',
+					{
+						'class': ''
+					},
+					['∆t',
+						createElement('sub', {
+								attrs: {type: 'text'},
+
+							}, ['g']
+						)
+					]
+				);
+			}
+
+		}
+	}
+</script>
+<style>
+    #add-container {
+        margin-top: 20px;
+        margin-bottom: 50px;
+        margin-left: 50px;
+        height: 100%;
+        width: calc(100% - 70px);
+    }
+
+    .add-tab {
+        margin-top: 20px;
+    }
+
+    .add-bg-title {
+        font-size: 25px;
+        font-weight: bold;
+    }
+
+    .add-mid-title {
+        font-size: 15px;
+        font-weight: bold;
+    }
+
+    .add-btns {
+        margin-top: 15px;
+        margin-left: 720px;
+    }
+
+    .add-xm-title {
+        margin-top: 3px;
+        width: 70px;
+    }
+
+    .add-input {
+        margin-right: 40px;
+        width: 250px;
+    }
+
+    .el-item {
+        display: inline-block;
+    }
+</style>

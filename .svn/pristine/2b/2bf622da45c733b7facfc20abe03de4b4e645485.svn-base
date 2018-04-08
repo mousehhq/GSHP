@@ -1,0 +1,649 @@
+<template>
+    <div>
+        <div id="project-list" class="left-list">
+            <el-input
+                    class="search-input"
+                    placeholder="请输入搜索项目"
+                    v-model="searchValue"
+                    @change="searchMethod">
+                <i slot="suffix" class="el-input__icon"
+                   :class="searchValue==''?'el-icon-search': 'el-icon-close'"
+                   @click="clearSearchValue">
+                </i>
+            </el-input>
+            <el-button type="text" size="medium" class="project-add" @click="projectAdd(false)">
+                <i class="el-icon-plus"></i>新增项目
+            </el-button>
+            <div class="project-add" @click="projectAdd">
+                <router-link class="add-button" :to="{path:'/projects/add'}"></router-link>
+            </div>
+
+            <div v-if="!totalCnt" class="none-item">暂无项目</div>
+            <ul v-else role="menubar" class="el-menu"
+                :default-active="('/'+$route.path.split('/')[1]).toLowerCase()">
+                <li v-for="item in projectLists"
+                    role="menuitem" tabindex="-1"
+                    @mouseenter="onMouseEnter(item)"
+                    class="el-menu-item list-item"
+                    :class="{'is-active': item.id==$route.query.id}">
+                    <i class="el-icon-menu"></i>
+
+                    <router-link :title="item.name" class="item-name"
+                                 :to="{path: '/projects/view', query: {id:item.id}}">{{item.name}}
+                    </router-link>
+
+                    <router-link :to="{path: '/projects/evaluate', query: {id:item.id}}">
+                        评估
+                    </router-link>
+                </li>
+            </ul>
+
+            <el-row v-if="totalCnt" class="home-pages" id="projectPages">
+                <el-pagination
+                        small
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                        :current-page="currentPage"
+                        :page-size="pageSize"
+                        layout="prev, pager, next"
+                        :total="totalCnt">
+                </el-pagination>
+            </el-row>
+
+            <el-dialog :title="isEdit?'上传参数表格':'新增项目'" :visible.sync="addProjectVisible" width="1000px">
+                <el-form :model="form" :rules="rules" ref="addForm" :inline="true">
+                    <!--<div class="margin-bottom"><span class="ieds-dot"></span>基本信息</div>-->
+
+                    <el-row>
+                        <el-col :span="8">
+                            <el-form-item prop="name" class="el-item" label="项目名称 :" style="margin-left:-10px;">
+                                <el-input v-model="form.name" size="small" placeholder="请输入项目名称"
+                                          :clearable="!isEdit"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-form-item prop="location" class="el-item" label="项目地点 :">
+                                <el-input v-model="form.location" size="small" placeholder="请输入项目地点(城市)"
+                                          :clearable="!isEdit"></el-input>
+                            </el-form-item>
+                        </el-col>
+
+                    </el-row>
+                    <el-row>
+                        <el-col :span="8">
+                            <el-form-item prop="area" class="el-item" label="建筑面积 :">
+                                <el-input v-model="form.area" size="small" placeholder="请输入建筑面积(M²)"
+                                          :clearable="!isEdit"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-form-item prop="proTime" class="el-item" label="投用时间 :">
+                            <el-date-picker type="date" placeholder="选择日期" v-model="form.beginTime"
+                                            :clearable="!isEdit" style="width: 200px;"></el-date-picker>
+                        </el-form-item>
+                        <el-col :span="8">
+                            <el-form-item prop="type" class="el-item" label="建筑类型 :">
+                                <el-input v-model="form.type" size="small" placeholder="请输入建筑类型"
+                                          :clearable="!isEdit"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="20" style="position: relative">
+                            <a :href="downloadUrl"><i class="el-icon-download"></i>下载模板文件</a>
+                            <span class="attention-info">
+                                <i class="el-icon-info"></i>请按照所给模板上传Excel文件，如果有字段为空将会影响计算结果。</span>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="8">
+                            <el-form-item class="el-item" label="供暖季 :">
+                                <el-date-picker
+                                        v-model="form.hotYear"
+                                        align="right"
+                                        type="year"
+                                        placeholder="选择年">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="3" style="position: relative">
+                            <el-upload
+                                    class="excel-file"
+                                    ref="hotupload"
+                                    :action="actionUrl"
+                                    :on-remove="onHotRemove"
+                                    :on-change="onHotChange"
+                                    :http-request="fileHttp"
+                                    :file-list="form.hotFile"
+                                    :auto-upload="true"
+                                    :multiple="false">
+                                <el-button type="primary" icon="el-icon-upload">上传</el-button>
+
+                                <!--<div slot="tip" class="el-upload__tip">只能上传excel文件，且不超过5M</div>-->
+                            </el-upload>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="8">
+                            <el-form-item class="el-item" label="供冷季 :">
+                                <el-date-picker
+                                        v-model="form.coldYear"
+                                        align="right"
+                                        type="year"
+                                        placeholder="选择年">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="3" style="position: relative">
+                            <el-upload
+                                    class="excel-file"
+                                    ref="coldupload"
+                                    :action="actionUrl"
+                                    :on-remove="onColdRemove"
+                                    :on-change="onColdChange"
+                                    :http-request="fileHttp"
+                                    :file-list="form.coldFile"
+                                    :auto-upload="true"
+                                    :multiple="false">
+                                <el-button type="primary" icon="el-icon-upload">上传</el-button>
+                                <!--<div slot="tip" class="el-upload__tip">只能上传excel文件，且不超过5M</div>-->
+                            </el-upload>
+                        </el-col>
+                    </el-row>
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="addProjectVisible = false">取 消</el-button>
+                    <el-button type="primary" @click="onSubmit('addForm')">确 定</el-button>
+                </div>
+            </el-dialog>
+        </div>
+    </div>
+
+</template>
+<script>
+
+    export default {
+        data() {
+            let validateNameRepe = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请输入项目名称'));
+                } else {
+                    for (let item of this.projectLists) {
+                        if (this.form.name === item.name) {
+                            if (this.isEdit) {
+                                if (item.id == this.$route.query.id) {
+                                    console.log('name not change');
+                                    continue;
+                                }
+                            }
+                            callback(new Error('该项目名已经存在'))
+                        }
+                    }
+                    callback();
+                }
+            };
+            return {
+                projectLists: [],
+                allprojectLists: [],
+                searchprojectLists: [],
+                searchValue: '',
+                isSearch: false,
+                currentPage: 1,
+                pageSize: 5,
+                totalCnt: 0,
+
+                tableData: [],
+                addProjectVisible: false,
+                actionUrl: GSHP_SERVER_ENDPOINT + '/project',
+                downloadUrl: GSHP_SERVER_ENDPOINT + '/templateFile',
+                form: {
+                    name: '',
+                    area: '',
+                    location: '',
+                    type: '',
+                    beginTime: '',
+                    hotYear: '',
+                    coldYear: '',
+                    hotFile: [],
+                    coldFile: [],
+                },
+                rules: {
+                    name: [
+                        {required: true, message: '请输入项目名称', trigger: 'blur'},
+                        {validator: validateNameRepe, trigger: 'blur'},
+                    ],
+                    area: [
+                        /* {required: true, message: '请输入建筑面积', trigger: 'blur'},*/
+                    ],
+                    location: [
+                        /*{required: true, message: '请输入项目地点', trigger: 'blur'},*/
+                    ],
+                    type: [
+                        /*{required: true, message: '请输入建筑类型', trigger: 'blur'},*/
+                    ],
+                    proTime: []
+                },
+
+                isEdit: false
+            }
+        },
+
+        created() {
+            this.getAllProjects();
+        },
+
+        methods: {
+            onSubmit(formName) {
+                var self = this;
+                self.$refs[formName].validate((isPass) => {
+                    if (isPass) {
+                        var model = new FormData();
+                        model.append('projectName', self.form.name);
+                        model.append('area', self.form.area);
+                        model.append('position', self.form.location);
+                        model.append('type', self.form.type);
+                        model.append('beginTime', self.form.beginTime ? Date.parse(self.form.beginTime).toString() : null);
+                        model.append('hotYear', self.form.hotYear ? Date.parse(self.form.hotYear).toString() : null);
+                        model.append('coldYear', self.form.coldYear ? Date.parse(self.form.coldYear).toString() : null);
+                        if (self.$refs.hotupload.uploadFiles && self.$refs.hotupload.uploadFiles.length > 0) {
+                            model.append('hotFile', self.$refs.hotupload.uploadFiles[0].raw);
+                        }
+                        if (self.$refs.coldupload.uploadFiles && self.$refs.coldupload.uploadFiles.length > 0) {
+                            model.append('coldFile', self.$refs.coldupload.uploadFiles[0].raw);
+                        }
+                        if (self.isEdit) {
+                            model.append('id', self.form.id);
+                            self.editItem(model);
+                        } else {
+                            self.addItem(model);
+                        }
+                    } else {
+                        console.log('validate error');
+                        return false;
+                    }
+                });
+            },
+
+            addItem(model) {
+                var self = this;
+                var url = GSHP_SERVER_ENDPOINT + '/project';
+                self.$http.post(url, model).then((response) => {
+                    if (response && response.status === 200) {
+                        this.$router.push({path: '/projects/evaluate', query: {id: response.data.id}});
+                    }
+                }, (err) => {
+                    var message = err.response && err.response.data && err.response.data.msg ? ',' + err.response.data.msg : ''
+                    this.$message({
+                        showClose: true,
+                        message: '新增项目失败' + message,
+                        type: 'warning'
+                    });
+                });
+            },
+
+            editItem(model) {
+                var self = this;
+                var url = GSHP_SERVER_ENDPOINT + '/project/updateProject';
+                self.$http.post(url, model).then(function (response) {
+                    console.log(response);
+                    if (response.status === 200) {
+                        self.$router.push({path: '/projects/evaluate', query: {id: self.form.id}});
+                    }
+                })
+            },
+
+            getAllProjects() {
+                var self = this;
+                var url = GSHP_SERVER_ENDPOINT + '/projects';
+                self.$http.get(url)
+                    .then(function (response) {
+                        if (response.status === 200) {
+                            self.allProjectsSuccess(response.data);
+                        }
+                    })
+                sessionStorage.setItem('isChange', false);
+            },
+
+            allProjectsSuccess(data) {
+                let self = this;
+                var data = data;
+                var list = [];
+                for (var i = 0; i < data.length; i++) {
+                    var item = data[i];
+                    var obj = {
+                        id: item.id,
+                        name: item.project_name,
+                        location: item.position,
+                    };
+                    list.push(obj);
+                }
+                this.firstId = list.length > 0 ? list[0].id : null;
+                this.$emit('setFirstId', this.firstId);
+                this.allprojectLists = list;
+                this.projectLists = list;
+                self.totalCnt = this.allprojectLists.length;
+                this.handleCurrentChange(1);
+            },
+
+            handleSizeChange(val) {
+                this.pageSize = val;
+                this.handleCurrentChange(1);
+            },
+
+            handleCurrentChange(val) {
+                let self = this;
+                let isChanged = sessionStorage.getItem('isChanged');
+                let pageNum = sessionStorage.getItem('pageNum');
+                if (isChanged == "true") {
+                    self.currentPage = JSON.parse(pageNum);
+                    sessionStorage.setItem('isChanged', false);
+                }
+                else {
+                    self.currentPage = val;
+                }
+                /*if (self.$store.state.change.isView) {
+                 self.currentPage = JSON.parse(sessionStorage.getItem('pageNum'));
+                 this.$store.dispatch('notChange');
+                 } else {
+                 self.currentPage = val;
+                 }*/
+                if (self.isSearch) {
+                    self.projectLists = self.searchprojectLists.slice((self.currentPage - 1) * self.pageSize, self.currentPage * self.pageSize);
+                } else {
+                    self.projectLists = self.allprojectLists.slice((self.currentPage - 1) * self.pageSize, self.currentPage * self.pageSize);
+                }
+            },
+
+            clearSearchValue() {
+                this.searchValue = '';
+                this.searchprojectLists = this.allprojectLists;
+                this.totalCnt = this.searchprojectLists.length;
+                this.handleCurrentChange(1);
+            },
+
+            searchMethod() {
+                var self = this;
+                self.isSearch = true;
+                self.searchprojectLists = self.allprojectLists.filter(function (item) {
+                    return item.name.indexOf(self.searchValue) > -1;
+                });
+                this.totalCnt = this.searchprojectLists.length;
+                this.handleCurrentChange(1);
+            },
+
+            onMouseEnter(item) {
+                var self = this;
+                let listNum = self.allprojectLists.indexOf(item);
+                var pageNum = Math.floor(listNum / 5) + 1;
+                sessionStorage.setItem("pageNum", pageNum);
+                self.$emit('hoverItem', item);
+            },
+
+            projectAdd(isEdit) {
+                this.isEdit = isEdit;
+                if (this.isEdit) {
+                    this.getItem();
+                }
+                this.addProjectVisible = true;
+            },
+
+            getItem() {
+                var self = this;
+                var url = GSHP_SERVER_ENDPOINT + '/project/projectInfo';
+                var model = {id: this.$route.query.id};
+
+                self.$http.get(url, {params: model})
+                    .then(function (response) {
+                        if (response.status === 200) {
+                            self.successCallback(response.data);
+                        }
+                    })
+                    .catch(function (error) {
+
+                    });
+            },
+
+            successCallback(data) {
+                //var data = data[0];
+                var obj = {
+                    id: data.id,
+                    name: data.project_name,
+                    location: data.position,
+                    area: data.area,
+                    type: data.type,
+                    beginTime: data.begin_time,
+
+                };
+                this.form = obj;
+                console.dir(this.form);
+            },
+
+            onHotChange(file, fileList) {
+                this.form.hotFile = fileList.slice(-1);
+            },
+
+            onColdChange(file, fileList) {
+                this.form.coldFile = fileList.slice(-1);
+            },
+
+            onHotRemove(file, fileList) {
+                this.form.hotFile = fileList;
+            },
+            onColdRemove(file, fileList) {
+                this.form.coldFile = fileList;
+            },
+
+            fileHttp() {
+                console.log('stop file auto upload');
+                return;
+            },
+
+            downloadFile() {
+                let url = GSHP_SERVER_ENDPOINT + '/templateFile';
+                this.$http.get(url)
+            },
+
+            /*onChange(file, fileList){
+             console.dir(file);
+             var self = this;
+             this.form.excelFile = fileList.slice(-1);
+             let fileReader = new FileReader();
+             fileReader.onload = (ev) => {
+             try {
+             let data = ev.target.result;
+             let workbook = xlsx.read(data, {type: 'binary'});
+             let result = {};
+             let newArr = [];
+             workbook.SheetNames.forEach((sheetName) => {
+             let roa = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
+             if (roa.length) {
+             result[sheetName] = roa;
+             for (let i = 0; i < sheetName; i++) {
+             //	console.log(result[sheetName]);
+             }
+             }
+             });
+             //this.result = result[workbook.SheetNames[0]];
+             var arr = result[workbook.SheetNames[0]];
+
+             for (var i = 1; i < arr.length; i++) {
+             var newObj = {};
+             for (var j = 0; j < arr[0].length; j++) {
+             var key = arr[0][j];
+             if (arr[0][j].toLowerCase().trim() === 'time' || arr[0][j].toLowerCase() == '时间') {
+             key = 'time';
+             } else if (arr[0][j].toLowerCase().trim() === 'tgo' || arr[0][j].toLowerCase().indexOf('o') > -1) {
+             key = 'tgo';
+             } else if (arr[0][j].toLowerCase().trim() === 'tg' || arr[0][j].toLowerCase().indexOf('∆') > -1) {
+             key = 'tg';
+             } else if (arr[0][j].toLowerCase().trim() === 'a' || arr[0][j].toLowerCase().indexOf('α') > -1) {
+             key = 'a';
+             } else if (arr[0][j].toLowerCase().trim() === 'n' || arr[0][j].toLowerCase().indexOf('η') > -1) {
+             key = 'n';
+             } else if (arr[0][j].toLowerCase().trim() === 'cop' || arr[0][j].toLowerCase().indexOf('c') > -1) {
+             key = 'cop';
+             } else if (arr[0][j].toLowerCase().trim() === 'eer' || arr[0][j].toLowerCase().indexOf('e') > -1) {
+             key = 'eer';
+             }
+             newObj[key] = arr[i][j];
+             }
+             newArr.push(newObj);
+             }
+             self.allTableData = newArr;
+             self.totalCnt = newArr.length;
+             self.handleCurrentChange(1);
+             } catch (e) {
+             this.form.excelFile = [];
+             this.$message({
+             message: '文件格式不对',
+             type: 'warning'
+             });
+             }
+             this.$http.post('120.79.84.167:3000/project', {
+             ProjectName: self.name,
+             area: self.area,
+             position: self.location,
+             type: self.type,
+             table: this.result
+             }).then((response) => {
+             console.log(response);
+             self.$router.push('/Home');
+             })
+             }
+             fileReader.readAsBinaryString(file.raw);
+             },*/
+
+            renderHeader1(createElement, {column, $index}) {
+                return createElement(
+                    'span',
+                    {
+                        'class': ''
+                    },
+                    ['t',
+                        createElement('sub', {
+                                attrs: {type: 'text'},
+                            }, ['g,o']
+                        )
+                    ]
+                );
+            },
+
+            renderHeader2(createElement, {column, $index}) {
+                return createElement(
+                    'span',
+                    {
+                        'class': ''
+                    },
+                    ['∆t',
+                        createElement('sub', {
+                                attrs: {type: 'text'},
+
+                            }, ['g']
+                        )
+                    ]
+                );
+            },
+
+        },
+    }
+
+</script>
+<style>
+    .left-list {
+        position: relative;
+        float: left;
+        width: 260px;
+        background-color: #fff;
+        margin-bottom: -2000px;
+        padding-bottom: 2000px;
+        min-height: 200px;
+        margin-top: 20px;
+        max-height: 500px;
+        overflow: auto;
+        border-right: solid 1px #e6e6e6;
+        text-align: left;
+    }
+
+    .left-list:after {
+        clear: both;
+    }
+
+    #project-list .el-menu {
+        border: none;
+        margin-top: 8px;
+    }
+
+    #project-list .el-menu-item:first-child {
+        margin-left: 10px;
+    }
+
+    #project-list .el-input.search-input {
+        width: 200px;
+        margin-left: 35px;
+    }
+
+    #project-list .project-add {
+        margin-top: 20px;
+        margin-left: 35px;
+    }
+
+    #project-list .list-item {
+        text-align: left;
+        cursor: auto;
+    }
+
+    #project-list .list-item.is-active {
+        color: #303133;
+        background-color: #def1ff;
+    }
+
+    #project-list .list-item.is-active:hover {
+        background-color: #ecf5ff;
+    }
+
+    #project-list .list-item:hover {
+        background-color: #ecf5ff;
+    }
+
+    #project-list .list-item:last-child {
+        margin-right: 10px;
+    }
+
+    #project-list .el-menu-item {
+        height: 33px;
+        line-height: 33px;
+    }
+
+    .el-date-editor.el-input.el-input--small.el-input--prefix.el-input--suffix.el-date-editor--year {
+        width: 150px;
+    }
+
+    ul.el-upload-list.el-upload-list--text {
+        position: absolute;
+        top: -6px;
+        left: 150px;
+    }
+
+    .home-pages {
+        margin-right: 22px;
+    }
+
+    .item-name {
+        color: #6f7180;
+        width: 130px;
+        display: inline-block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .attention-info {
+        display: inline-block;
+        font-size: 12px;
+        color: #909090;
+        margin-left: 40px;
+    }
+
+    .attention-info .el-icon-info {
+        margin-right: 10px;
+    }
+
+</style>

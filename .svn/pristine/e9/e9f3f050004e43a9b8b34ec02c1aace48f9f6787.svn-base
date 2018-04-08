@@ -1,0 +1,141 @@
+<template>
+    <div id="home">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list @hoverItem="hoverItem"></project-list>
+            <div class="nav-right view row-container">
+                <div>
+                    <h3>
+                        <span v-if="project.location">{{project.name + '所在地'}}</span>
+                        <span v-else>项目所在地</span>
+                        <span v-if="project.location">{{'：' + project.location}}</span>
+                    </h3>
+                </div>
+                <div id="container">
+                    <map-container></map-container>
+                </div>
+            </div>
+
+        </div>
+        <footer-bottom></footer-bottom>
+    </div>
+
+</template>
+<script>
+    import headTop from '../../Header.vue'
+    import footerBottom from '../../Footer.vue'
+    import topNav from '../../TopNav.vue'
+    import projectList from './ProjectList.vue'
+    import mapContainer from '../Project/map.vue'
+    import AMap from 'AMap'
+
+    export default {
+        data() {
+            return {
+                map: {},
+                markers: [],
+                geocoder: '',
+                currentId: '',
+                project: {}
+            }
+        },
+        components: {
+            headTop,
+            footerBottom,
+            topNav,
+            projectList,
+            mapContainer
+        },
+        mounted(){
+            var self = this;
+            self.init();
+        },
+
+        methods: {
+            init: function () {
+                var self = this;
+                //创建map，默认中心:南京
+                self.map = new AMap.Map('container', {
+                    resizeEnable: true,
+                    dragEnable: true,
+                    keyboardEnable: true,
+                    doubleClickZoom: true,
+                    zoom: 6,
+                    center: [118.7964700000, 32.0583800000]
+                });
+                //map小插件
+                AMap.plugin(['AMap.ToolBar', 'AMap.Scale', 'AMap.OverView'],
+                    function () {
+                        self.map.addControl(new AMap.ToolBar());
+                        self.map.addControl(new AMap.Scale());
+                        self.map.addControl(new AMap.OverView({
+                            isOpen: true
+                        }));
+                    });
+                //map城市插件
+                AMap.plugin('AMap.Geocoder', function () {
+                    self.geocoder = new AMap.Geocoder({
+                        //city默认：“全国”
+                    });
+                });
+
+                self.map.setFitView();
+                //map加载完成后获取中心点城市
+                self.map.on('complete', self.getCity);
+                //map停止移动后获取中心点城市
+                self.map.on('moveend', self.getCity);
+
+            },
+
+            hoverItem(item) {
+                var self = this;
+                //防止重复显示
+                if (item.id == this.currentId) {
+                    console.log('same');
+                    return;
+                }
+                this.project = item;
+                self.map.remove(self.markers);
+                var cityName = item.location;
+                console.log(cityName);
+                //根据城市名获取id，定位和添加弹跳标志
+                self.geocoder.getLocation(cityName, function (status, result) {
+                    if (status == 'complete' && result.geocodes.length) {
+                        var ProjectLocation = [result.geocodes[0].location.getLng(), result.geocodes[0].location.getLat()];
+                        console.log(ProjectLocation);
+                        var marker = new AMap.Marker({
+                            position: ProjectLocation,
+                            map: self.map
+                        });
+                        self.map.setZoomAndCenter(6, ProjectLocation);
+                        marker.setAnimation('AMAP_ANIMATION_BOUNCE');
+                        self.markers.push(marker);
+                    }
+                });
+                this.currentId = item.id;
+            },
+
+            //获取中心点城市
+            getCity() {
+                this.map.getCity(function (data) {
+                    if (data['province'] && typeof data['province'] === 'string') {
+                        document.getElementById('info').innerHTML = '城市：' + (data['city'] || data['province']);
+                    }
+                });
+            }
+        }
+    }
+</script>
+<style>
+    #container {
+        position: absolute;
+        display: inline-block;
+        margin-left: 300px;
+        margin-top: 220px;
+        margin-bottom: 50px;
+        width: calc(100% - 300px);
+        height: calc(100% - 170px);
+        overflow: hidden;
+    }
+</style>

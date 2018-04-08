@@ -1,0 +1,152 @@
+<template>
+    <div class="eerparam">
+        <div id="myChart"></div>
+    </div>
+</template>
+
+<script>
+
+    export default {
+
+        data () {
+            return {
+                dataIndex: [],
+                markEER:0
+            }
+        },
+        
+
+        /*mounted(){
+            this.drawLine();
+        },*/
+
+        methods: {
+            drawLine(dataAll,markEER){
+                this.markEER = markEER;
+                var dataAll = dataAll;
+                let myChart = this.$echarts.init(document.getElementById('myChart'));              
+                this.dataIndex=[];
+                for (let i = 0; i < dataAll.length; i++) {
+                    this.dataIndex.push(i);
+                }
+                let markLineOpt={};
+                if (this.markEER.length) {
+                    markLineOpt = {
+                        animation: false,
+                        label: {
+                            normal: {
+                                show: true,
+                            }
+                        },
+                        lineStyle: {
+                            normal: {
+                                type: 'dotted',
+                                color: 'blue',
+                            }
+                        },
+
+                        data: [[{
+                            coord: [this.markEER[0], 0],
+                            symbol: 'none'
+                        }, {
+                            coord: [this.markEER[0], dataAll.length - 1],
+                            symbol: 'none'
+                        }]]
+                    };
+                }
+                myChart.setOption({
+                    title: {
+                        show: true,
+                        text: '● (-)bias           △EER',
+                        textStyle: {
+                            color: 'black',
+                            fontSize: '12'
+                        },
+                        subtext: '● (+)bias',
+                        subtextStyle: {
+                            color: 'red',
+                        }
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+                            type: 'cross',        // 默认为直线，可选为：'line' | 'shadow'
+                        }
+                    },
+
+                    xAxis: {
+                        show: true,
+                        type: 'value',
+                        position: 'bottom',
+                        splitLine: {show: false},
+
+                    },
+                    yAxis: {
+                        type: 'category',
+                        position: 'left',
+                        splitLine: {show: true, lineStyle: {type: 'dashed'}},
+                        axisLine: {show: true},
+                        axisLabel: {show: false},
+                        axisTick: {
+                            show: false,
+                            length: 1,
+                        },
+                        data: this.dataIndex,
+                    },
+
+                    series: [
+                        {
+                            name: '△EER',
+                            type: 'scatter',
+                            symbol: 'circle',
+
+                            itemStyle: {
+                                normal: {
+                                    show: true,
+                                    color: function (params) {
+                                        var index_color = params.value;
+                                        if (index_color >= 0) {
+                                            return 'red';
+                                        } else {
+                                            return 'black';
+                                        }
+                                    },
+                                }
+                            },
+                            label: {
+                                normal: {
+                                    show: false,
+                                    formatter: '{c}',
+                                    lineHeight: 50,
+                                }
+                            },
+                            markLine: markLineOpt,
+                            data: dataAll
+
+
+                        }]
+                });
+            }
+        }
+    }
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped>
+    .eerparam {
+        width: 20%;
+        height: 100%;
+        margin-right: 80px;
+        margin-top: 84px;
+        border: 1px solid;
+        float: right;
+    }
+
+    #myChart {
+        width: 100%;
+
+        height: 500px;
+        border: 1px solid;
+
+    }
+</style>

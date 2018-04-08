@@ -1,0 +1,586 @@
+/**
+ * Created by haoqianhuang on 2017/12/29.
+ */
+//import numbers from 'numbers'
+
+
+const calculate = {
+	/*要显示的表*/
+	tableData : [],
+	/*接下来的数组是后面评估页面需要用到的数据*/
+	deltatuArr: [],
+	quArr: [],
+	qgArr: [],
+	pArr: [],
+	tLArr: [],
+	tHArr: [],
+	copcArr: [],
+	EERArr: [],
+	WTEuArr: [],
+	WTEgArr: [],
+	betaArr: [],
+	//输入：读取excel表并转化为对象数组的data，季节，输出显示的tableData，包括tgo, tg, a, n, cop, eer
+	//位置：addProject
+	/*特征值
+	 * */
+	getTableData2: (data) =>{
+		return [{
+			tgo:2,tg:3,a:0.1,n:0.2,cop:10,eer:3
+		},{
+			tgo:15,tg:12,a:0.6,n:0.8,cop:12,eer:0.2
+		}];
+	},
+
+	getTableData: (data, season) => {
+		data = [{
+			id: 1,
+			position: "上海",
+			project_name: "project1",
+			type: "学校",
+			tui: 1,
+			tuo: 1,
+			tgi: 1,
+			tgo: 1,
+			gu: 1,
+			gg: 1,
+			pl: 1,
+			pu: 1,
+			pg: 1,
+			season: 0
+		}, {
+			id: 1,
+			position: "南京",
+			project_name: "project2",
+			type: "公园",
+			tui: 10,
+			tuo: 10,
+			tgi: 10,
+			tgo: 10,
+			gu: 10,
+			gg: 10,
+			pl: 10,
+			pu: 10,
+			pg: 10,
+			season: 0
+		}];
+		let self = calculate;
+		var season = season;
+		for (let i = 0; i < data.length; i++) {
+			var item = data[i];
+			//用户侧温差
+			let deltatu = Math.abs(data[i].tui - data[i].tuo);
+
+			//用户侧换热量
+			let qu = self._getqu(data, i);
+
+			//地源侧温差
+			let tg = self._gettg();
+
+			//地源侧换热量
+			let qg = 1 / 3600 * 1000 * 4.18 * tg * data[i].gg;
+
+			//总能耗
+			let p = self._getp(data, i);
+
+			//机组能效cop
+			let cop = self._getcop(data, i);
+
+			let tL = self._gettL(data, season, i);
+			let tH = self._gettH(data, season, i);
+			//卡诺循环能效copc
+			let copc = self._getcopc(data, season, i);
+
+			//系统能效EER:
+			let EER = self._getEER(data, i);
+
+			//水输送效率:
+			let WTEu = self._getWTEu(data, i);
+
+			let WTEg = qu / data[i].pg;
+			let beta = self._getBeta(data.i);
+
+			//a
+			let a = data[i].pl / p;
+
+			//n
+			let n = self._getEta(data, i, season);
+
+			//特征值表子元素
+			let obj = {};
+			obj.id = item.id;
+			obj.name = item.name;
+			obj.tgo = data[i].tgo;
+			obj.tg = tg;
+			obj.a = a;
+			obj.n = n;
+			obj.cop = cop;
+			obj.EER = EER;
+
+			//其他不显示的数据
+			self.deltatuArr.push(deltatu);
+			self.quArr.push(qu);
+			self.qgArr.push(qg);
+			self.pArr.push(p);
+			self.tLArr.push(tL);
+			self.tHArr.push(tH);
+			self.copcArr.push(copc);
+			self.EERArr.push(EER);
+			self.WTEuArr.push(WTEu);
+			self.WTEgArr.push(WTEg);
+			self.betaArr.push(beta);
+
+<<<<<<< .mine
+<<<<<<< .mine
+			tableData.push(obj);
+		}
+		return tableData;
+		
+	},
+||||||| .r83
+			tableData.push(obj);
+		}
+		return tableData;
+	},
+=======
+            tableData.push(obj);
+        }
+        return tableData;
+    },
+||||||| .r86
+            tableData.push(obj);
+        }
+        return tableData;
+    },
+=======
+			self.tableData.push(obj);
+		}
+		return self.tableData;
+	},
+>>>>>>> .r87
+>>>>>>> .r85
+//返回死数据，测试用，应换成上面的getTableData
+	getTableData2: (data) =>{
+		return [{
+			tgo:2,tg:3,a:0.1,n:0.2,cop:10,eer:3
+		},{
+			tgo:15,tg:12,a:0.6,n:0.8,cop:12,eer:0.2
+		}];
+	},
+
+	/*计算△EER*/
+	/*tableData：项目特征值Obj
+	 * isDesc：是否降序——bool*/
+	/*贾坤那边每次重新排序后调用,arr为当前改版的一列*/
+	afterSort: (tableData, isDesc, season) => {
+		/*tableData = {
+		 tgo: [],
+		 tg: [],
+		 a: [],
+		 n: [],
+		 cop: [],
+		 EER: []
+		 };
+		 let data = [];
+		 tableData[length - 1] = arr;
+		 tableData = numbers.matrix.rotate(tableData, 90, counterclockwise);
+		 tableData = numbers.matrix.reverseRows(tableData);
+		 let keys = ['tgo', 'tg', 'a', 'n', 'cop', 'EER'];
+		 tableData.push(keys);
+		 for (let i = 0; i < tableData.length; i++) {
+		 for (let j = 0; j < tableData[i].length; j++) {
+		 let key = tableData[length - 1][j];
+		 data[key] = tableData[i][j];
+		 }
+		 }*/
+		var sortedTableData = tableData.sort(function (a, b) {
+			return a.EER > b.EER;
+		});
+		self.dataList = data;
+		console.log(data);
+		let EERArr = calculate._getDeltaEER(sortedTableData, season);
+		return EERArr;
+	},
+
+	_gettg: (data, index) => {
+		return Math.abs(data[index].tgi - data[index].tgo);
+	},
+
+	_getqu: (data, index) => {
+		let deltatu = Math.abs(data[index].tui - data[index].tuo);
+		return 1 / 3600 * 1000 * 4.18 * deltatu * data[index].gu;
+	},
+
+	_getcop: (data, index) => {
+		let qu = calculate._getqu(data, index);
+		return data[index].qu / data[index].pl;
+	},
+
+	_getcopc: (data, season, index) => {
+		let tL = calculate._gettL(data, season, index);
+		let tH = calculate._gettH(data, season, index);
+		return (season == summer) ? tL / (tH - tL) : tH / (tH - tL);
+	},
+
+	_getp: (data, index) => {
+		return data[index].pl + data[index].pg + data[index].pu;
+	},
+
+	//tL存入数组tLs
+	_gettL: (data, season, index) => {
+		let tL = (season == summer) ? (data[index].tui + data[index].tuo) / 2 - 5 : (data[index].tgi + data[index].tgo) / 2 - 5;
+		return tL;
+	},
+
+	//将tH存入数组tHs
+	_gettH: (data, season, index) => {
+		let tH = (season == summer) ? (data[index].tgi + data[index].tgo) / 2 + 5 : (data[index].tui + data[index].tuo) / 2 + 5;
+		return tH;
+	},
+
+	_getEER: (data, index) => {
+		let qu = calculate._getqu(data, index);
+		let p = calculate._getp(data, index);
+		return qu / p;
+	},
+
+	_getWTEu: (data, index) => {
+		let qu = calculate._getqu(data, index);
+		return qu / data[index].pu;
+	},
+
+
+	_getBeta: (data, index) => {
+		let qu = calculate._getqu(data, index);
+		return qu / (data[index].pu + data[index].pg);
+	},
+
+	_getEta: (data, index, season) => {
+		let cop = calculate._getcop(data, index);
+		let copc = calculate._getcopc(data, season, index);
+		return cop / copc;
+	},
+
+
+	/*权重部分*/
+	_getWtEERt: (data, pos, season) => {
+		let self = calculate;
+		let key = ['n', 'tg', 'tgo'];
+		let nArr = self._getArr(data, key[0]);
+		let _n = self._getAvg(nArr);
+
+		let tgArr = self._getArr(data, key[1]);
+		let _tg = self._getAvg(tgArr);
+
+		//let tLArr = this._gettLArr(data,season);
+		let _tL = self._getAvg(self.tLArr);
+
+		//let betaArr = this._getBetaArr(data);
+		let _beta = self._getAvg(self.betaArr);
+
+		//let tHArr = this._gettHArr(data,season);
+		let _tH = self._getAvg(self.tHArr);
+
+		let tgoArr = self._getArr(data, key[2]);
+
+		let tgoVal = self._getQuar(tgoArr, pos);
+		if (season == summer) {
+			return [1 / (1 / _n * (tgoVal + 0.5 * _tg + 5 - _tL) / (_tL + 273.15) + 1 / _beta), tgoVal];
+		}
+		else if (season == winter) {
+			return [1 / (1 / _n * (_tH - (tgoVal - 0.5 * _tg - 5) / (_tL + 273.15) + 1 / _beta)), tgoVal];
+		}
+		else {
+			this.$message({
+				message: '文件格式不对',
+				type: 'warning'
+			});
+		}
+	},
+
+	_getWDeltaEER: (data, pos) => {
+		let self = calculate;
+		//let copArr = this._getcopArr(data);
+		let _cop = self._getAvg(self.copArr);
+
+		//let WTEArr = this._getWTEArr(data);
+		let _WTE = self._getAvg(self.WTEArr);
+
+		//let EERArr = this._getEERArr(data);
+		let _EER = self._getAvg(self.EER);
+
+		let tgArr = self._getArr(data, 'tg');
+		let _tg = self._getAvg(tgArr);
+
+		let tgVal = self._getQuar(tgArr, pos);
+		return [1 / (1 / _cop + 1 / _WTE + _tg / tgVal * (1 / _EER - 1 / _cop - 1 / _WTE)), tgVal];
+	},
+
+	_getWEtaEQuar: (data, pos, season) => {
+		let self = calculate;
+		let copArr = this._getArr(data, 'cop');
+		let _cop = self._getAvg(copArr);
+
+		//let betaArr = this._getBetaArr(data);
+		let _beta = self._getAvg(self.betaArr);
+
+		let nArr = self._getArr(data, 'n', season);
+		let etaVal = self._getQuar(nArr, pos);
+		return [1 / (1 / (nVal * _cop) + 1 / _beta), nVal];
+	},
+
+	_getWaEER: (data, pos) => {
+		let self = calculate;
+		let nArr = self._getArr(data, 'n');
+		let _n = self._getAvg(nArr);
+
+		let copArr = this._getArr(data, 'cop');
+		let _cop = self._getAvg(copArr);
+
+		let aArr = self._getArr(data, 'a');
+		let aVal = self._getQuar(aArr, pos);
+		return [aVal * _n * _cop, aVal];
+	},
+
+	_getW: (data, type, season) => {
+		let self = calculate;
+		let EERslt1;
+		let EERslt2;
+
+		let tgArr = self._getArr(data, 'tg');
+		let nArr = self._getArr(data, 'n');
+		let aArr = self._getArr(data, 'a');
+
+		switch (type) {
+			case 't':
+				EERslt1 = self._getWtEERt(data, 1, season);
+				EERslt2 = self._getWtEERt(data, 3, season);
+				break;
+			case 'delta':
+				EERslt1 = self._getWDeltaEER(tgArr, 1);
+				EERslt2 = self._getWDeltaEER(tgArr, 3);
+				break;
+			case 'n':
+				EERslt1 = self._getWEtaEQuar(nArr, 1);
+				EERslt2 = self._getWEtaEQuar(nArr, 3);
+				break;
+			case 'a':
+				EERslt1 = self._getWaEER(aArr, 1);
+				EERslt2 = self._getWaEER(aArr, 3);
+				break;
+			default:
+				alert("参数错误");
+				break;
+		}
+
+		let _EER1 = EERslt1[0];
+		let _EER2 = EERslt2[0];
+		let _denom1 = EERslt1[1];
+		let _denom2 = EERslt2[1];
+
+		return (_EER1 - _EER2) / (_denom1 - _denom2);
+	},
+
+	_getWVector: (data, season) => {
+		let self = calculate;
+		let Wt = self._getW(data, 't', season);
+		let Wdelta = self._getW(data, 'delta', season);
+		let Weta = self._getW(data, 'n', season);
+		let Wa = self._getW(data, 'a', season);
+		let arr = [];
+		arr.push(Wt, Wdelta, Weta, Wa);
+		console.log('arr' + arr);
+		return arr;
+	},
+
+	_getX: (table) => {
+		let A = [];
+		let Ao = [0, 0, 0, 0];
+		let n = table.length;
+		console.log(n);
+		//将字符串前后空格去掉，解析为浮点数
+		for (let row of table) {
+			row.tgo = parseFloat(row.tgo);
+			row.tg = parseFloat(row.tg);
+			row.a = parseFloat(row.a);
+			row.n = parseFloat(row.n);
+			row.cop = parseFloat(row.cop);
+			row.eer = parseFloat(row.eer);
+		}
+		//存为二维数组
+		for (let row of table) {
+
+			let temp = [];
+			temp.push(row.tgo);
+			temp.push(row.tg);
+			temp.push(row.a);
+			temp.push(row.n);
+			A.push(temp);
+		}
+
+		//获得均值
+		for (let row of table) {
+			Ao[0] += row.tgo;
+			Ao[1] += row.tg;
+			Ao[2] += row.a;
+			Ao[3] += row.n;
+		}
+		Ao = Ao.map((item) => item / n);
+		console.log(Ao);
+
+		//获得偏差矩阵
+		console.log(222, A);
+		console.log('Ao: ' + Ao);
+		for (let i = 0; i < n; i++) {
+			A[i] = numbers.matrix.subtraction(A[i], Ao);
+		}
+
+		console.log(3333, A);
+		return A;
+	},
+
+	_getF: (X, _vector) => {
+		return numbers.matrix.multiply(X[i], _vector);
+	},
+
+	/*最终结果*/
+	_getDeltaEER: (data, season) => {
+		let self = calculate;
+		let _vector = self._getWVector(data, season);
+		let X = self._getX(data);
+		let F = self._getF(X, _vector);
+		let DeltaEER = [];
+		for (let i of F) {
+			for (let j of F[i]) {
+				DeltaEER[i] += F[i][j];
+			}
+		}
+		return DeltaEER;
+	},
+
+	_getArr: (data, key) => {
+		let Arr = [];
+		for (let item of data) {
+			Arr.push(item[key])
+		}
+		return Arr;
+	},
+	/*先存进数组，再求平均数*/
+	/*_getEtaArr:(tableData)=>{
+	 let EtaArr = [];
+	 for(let i = 0;i<tableData.length;i++){
+	 EtaArr.push(tableData[i].eta);
+	 }
+	 return EtaArr;
+	 },
+
+	 _gettgArr:(data)=>{
+
+	 let tgArr = [];
+	 for(let i = 0;i<data.length;i++){
+	 tgArr.push(_gettg(data,i));
+	 }
+	 return tgArr;
+	 },
+
+	 _gettLArr:(data,season)=>{
+	 let tLArr = [];
+	 for(let i = 0;i<data.length;i++){
+	 tLArr.push(_gettL(data,season,i));
+	 }
+	 return tLArr;
+	 },
+
+	 _getBetaArr:(data)=>{
+	 let betaArr = [];
+	 for(let i = 0;i<data.length;i++){
+	 betaArr.push(_getBeta(data,i));
+	 }
+	 return betaArr;
+	 },
+
+	 _gettHArr:(data,season)=>{
+	 let tHArr = [];
+	 for(let i = 0;i<data.length;i++){
+	 tHArr.push(_gettH(data,season,i));
+	 }
+	 return tHArr;
+	 },
+
+	 _gettgoArr:(data)=>{
+	 let tgoArr = [];
+	 for(let i = 0;i<data.length;i++){
+	 tgoArr.push(data[i].tgo);
+	 }
+	 return tgoArr;
+	 },
+
+	 _getcopArr:(tableData)=>{
+	 let copArr = [];
+	 for(let i = 0;i<tableData.length;i++){
+	 copArr.push(tableData[i].cop);
+	 }
+	 return copArr;
+	 },
+
+	 _getWTEArr:(data)=>{
+	 let WTEArr = [];
+	 for(let i = 0;i<data.length;i++){
+	 WTEArr.push(_getWTEu(data,i));
+	 }
+	 return WTEArr;
+	 },
+
+	 _getEERArr:(data)=>{
+	 let EERArr = [];
+	 for(let i = 0;i<data.length;i++){
+	 EERArr.push(_getEER(data,i));
+	 }
+	 return EERArr;
+	 },
+
+	 _getaArr:(tableData)=>{
+	 let aArr = [];
+	 for(let i = 0;i<tableData.length;i++){
+	 aArr.push(tableData[i].a);
+	 }
+	 return aArr;
+	 },*/
+
+
+
+
+	_getAvg: (data) => {
+		let avg = 0;
+		for (let i = 0; i < data.length; i++) {
+			avg += data[i].index;
+		}
+		avg = avg / data.length;
+		return avg;
+	},
+
+
+	//计算四分位数,输入：数组和上/下分位，index为1或者3
+	_getQuar: (arr, index) => {
+		let self = calculate;
+		let quartile;
+		let sortedArr = self._sortArr(arr);
+		let num = (sortedArr.length + 1) / 4 * index;
+		let integer = parseInt(num);
+		//分为整数和小数两种情况
+		if (integer === num) {
+			quartile = sortedArr[num - 1];
+		}
+		else {
+			quartile = sortedArr[integer - 1] * 0.25 + sortedArr[integer] * 0.75;
+		}
+		console.log('quartile ' + quartile);
+		return quartile;
+	},
+
+	_sortArr: (arr) => {
+		return arr.sort(function (a, b) {
+			return a - b;
+		});
+	}
+};
+export default calculate

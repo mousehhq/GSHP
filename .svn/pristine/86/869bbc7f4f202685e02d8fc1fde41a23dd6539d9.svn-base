@@ -1,0 +1,121 @@
+<template>
+    <div id="projects">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list></project-list>
+            <div class="nav-right view row-container">
+                <div>
+                    <h3>后评估</h3>
+                </div>
+                <paramsList :dataOrigin="dataOrigin"></paramsList>
+                <eerparam :dataAll="dataAll"></eerparam>
+            </div>
+        </div>
+        <footer-bottom></footer-bottom>
+    </div>
+</template>
+
+<script>
+  import headTop from '../../Header.vue'
+    import footerBottom from '../../Footer.vue'
+    import topNav from '../../TopNav.vue'
+    import projectList from './ProjectList.vue'
+    import paramsList from '../Project/ParamsList.vue'
+    import eerparam from '../Project/EERparam.vue'
+    export default {
+        data() {
+            return {
+                projectList:[],
+                dataOrigin:{
+                    tgo:[],
+                    tg:[],
+                    a:[],
+                    n:[],
+                    cop:[],
+                    eer:[]
+                },
+                dataAll:[]
+            }
+        },
+        components: {
+            headTop,
+            footerBottom,
+            topNav,
+            projectList,
+            paramsList,
+            eerparam
+        },
+        created() {
+            this.geData();
+        },
+        methods: {
+            geData(){
+                var self = this;
+                /*var url = GSHP_SERVER_ENDPOINT + '/projects';
+                 self.$http.get(url)
+                 .then(function (response) {
+                 if (response.status === 200) {
+                 self.getDatasList(response.data);
+                 self.dataProjects = response.data;
+                 self.forEERSort();
+                 self.drawParam();
+                 }
+                 });*/
+                /*假数据*/
+                var response = {
+                    status:200,
+                    data: [{
+                        id: 1,
+                        position: "上海",
+                        project_name: "project1",
+                        type: "学校",
+                        tui: 1,
+                        tuo: 1,
+                        tgi: 1,
+                        tgo: 1,
+                        gu: 1,
+                        gg: 1,
+                        pl: 1,
+                        pu: 1,
+                        pg: 1
+                    }, {
+                        id: 1,
+                        position: "南京",
+                        project_name: "project2",
+                        type: "公园",
+                        tui: 10,
+                        tuo: 10,
+                        tgi: 10,
+                        tgo: 10,
+                        gu: 10,
+                        gg: 10,
+                        pl: 10,
+                        pu: 10,
+                        pg: 10,
+                        season:0
+                    }]
+                };
+                if (response.status === 200) {
+                    self.projectList = response.data;
+                }
+            },
+
+            /*计算特征值*/
+            calculateEigenvalue(){
+                var projectList = this.projectList;
+            },
+        }
+    }
+</script>
+<style scoped>
+ #container {
+        display: inline-block;
+        margin-left: 260px;
+        margin-top: 140px;
+        margin-bottom: 50px;
+        width: calc(100% - 260px);
+        height: calc(100% - 190px);
+        overflow: hidden;
+    }
+</style>

@@ -1,0 +1,137 @@
+<template>
+    <div id="home">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list @hoverItem="hoverItem"></project-list>
+            <div id="container">
+                <map-container></map-container>
+            </div>
+        </div>
+        <footer-bottom></footer-bottom>
+    </div>
+
+</template>
+<script type="text/javascript" src="http://cache.amap.com/lbs/static/addToolbar.js"></script>
+<script>
+	import headTop from '../../Header.vue'
+	import footerBottom from '../../Footer.vue'
+	import topNav from '../../TopNav.vue'
+	import projectList from './ProjectList.vue'
+	import mapContainer from '../../map.vue'
+	import AMap from 'AMap'
+
+    var currentPos
+	var map
+	var currentPos
+	var markers = []
+	var marker
+    var cityName
+    var cityIndex
+	var cityNames = ['北京', '上海', '武汉', '苏州']
+	var lnglats = [ //也可以使用LngLat对象
+		[116.3973999023, 39.9308008208],//北京
+		[121.5215885639, 31.2333897584],//上海
+		[114.3052500000, 30.5927600000],//武汉
+		[120.5831900000, 31.2983400000],//苏州
+		[118.7964700000, 32.0583800000]//南京
+	];
+	export default {
+		data() {
+			return {}
+		},
+		components: {
+			headTop,
+			footerBottom,
+			topNav,
+			projectList,
+			mapContainer
+		},
+		mounted: function () {
+			this.init()
+		},
+		methods: {
+			init:function() {
+				map = new AMap.Map('container', {
+					resizeEnable: true,
+					dragEnable: true,
+					keyboardEnable: true,
+					doubleClickZoom: true,
+					zoom: 5,
+					center: [118.7964700000, 32.0583800000]
+				});
+				AMap.plugin(['AMap.ToolBar', 'AMap.Scale', 'AMap.OverView'],
+					function () {
+						map.addControl(new AMap.ToolBar());
+						map.addControl(new AMap.Scale());
+						map.addControl(new AMap.OverView({
+							isOpen: true
+						}));
+					});
+
+				/*var infoWindow = new AMap.InfoWindow();*/
+				for (var i = 0; i < lnglats.length; i++) {
+					marker = new AMap.Marker({
+						position: lnglats[i],
+						map: map
+					});
+					markers.push(marker);
+					/*marker.content = '我是第' + (i + 1) + '个信息窗体的内容';
+					//给Marker绑定单击事件
+					marker.on('click', markerClick);*/
+				}
+				map.setFitView();
+
+				/*function markerClick(e) {
+					infoWindow.setContent(e.target.content);
+					infoWindow.open(map, e.target.getPosition());
+				}*/
+
+				map.on('complete', getCity);
+
+				map.on('moveend', getCity);
+
+				function getCity() {
+					map.getCity(function (data) {
+						if (data['province'] && typeof data['province'] === 'string') {
+							document.getElementById('info').innerHTML = '城市：' + (data['city'] || data['province']);
+						}
+					});
+				}
+			},
+
+			hoverItem(item) {
+				cityName = item.location;
+				console.log(cityName)
+				cityIndex = cityNames.indexOf(cityName);
+				if (currentPos == lnglats[cityIndex]) {
+					return;
+				}
+				resetCenter(cityIndex);
+				map.remove(markers);
+				marker = new AMap.Marker({
+					map: map,
+					position: lnglats[cityIndex]
+				});
+				markers.push(marker);
+				map.setZoomAndCenter(7, lnglats[cityIndex]);
+				currentPos = lnglats[cityIndex];
+
+				function resetCenter(i) {
+					map.setZoomAndCenter(5, lnglats[i]);
+				}
+			},
+		},
+	}
+</script>
+<style>
+#container{
+    display: inline-block;
+    margin-left:300px;
+    margin-top:80px;
+    margin-bottom:50px;
+    width: calc(100% - 300px);
+    height:calc(100% - 130px);
+    overflow: hidden;
+}
+</style>

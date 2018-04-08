@@ -1,0 +1,50 @@
+<template>
+    <div id="projects">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list></project-list>
+            <div class="nav-right view row-container">
+                <div class="page-title">
+                   后评估
+                </div>
+                <charts></charts>
+            </div>
+        </div>
+        <!--<footer-bottom></footer-bottom>-->
+    </div>
+</template>
+
+<script>
+    import headTop from '../../Header.vue'
+    import footerBottom from '../../Footer.vue'
+    import topNav from '../../TopNav.vue'
+    import projectList from './ProjectList.vue'
+    import charts from './Charts.vue'
+    import calculate from '../../../common/calculate.js'
+    export default {
+        data() {
+            return {
+            }
+        },
+        components: {
+            headTop,
+            footerBottom,
+            topNav,
+            projectList,
+            charts
+        },
+    }
+</script>
+<style scoped>
+    /*#container {
+        display: inline-block;
+        margin-left: 260px;
+        margin-top: 140px;
+        margin-bottom: 50px;
+        width: calc(100% - 260px);
+        height: calc(100% - 190px);
+        overflow: hidden;
+    }*/
+
+</style>

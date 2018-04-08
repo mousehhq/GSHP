@@ -1,0 +1,154 @@
+<template>
+    <div id="project-list" class="left-list">
+        <ul role="menubar" class="el-menu"
+            :default-active="('/'+$route.path.split('/')[1]).toLowerCase()">
+            <li v-for="item in projectLists"
+                role="menuitem" tabindex="-1"
+                @mouseenter="onMouseEnter(item)"
+                class="el-menu-item"
+                :class="{'is-active': item.id==$route.query.id}">
+                <i class="el-icon-menu"></i>
+                <span>{{item.name}}</span>
+                <router-link style="margin-left: 20px" :to="{path: '/projects/view', query: {id:item.id}}">
+                    查看
+                </router-link>
+                <router-link :to="{path: '/projects/evaluate', query: {id:item.id}}">
+                    评估
+                </router-link>
+            </li>
+        </ul>
+    </div>
+</template>
+<script>
+    export default{
+        data () {
+            return {
+                projectLists: [],
+            }
+        },
+
+        created() {
+            this.getAllProjects();
+        },
+
+        methods: {
+            getAllProjects(){
+                var self = this;
+                /*假数据*/
+                var projects = [{
+                    id: '1',
+                    name: '项目一',
+                    location: '南京',
+                }, {
+                    id: '2',
+                    name: '项目二',
+                    location: '北京'
+                }, {
+                    id: '3',
+                    name: '项目三',
+                    location: '上海'
+                }, {
+                    id: '1',
+                    name: '项目四',
+                    location: '苏州',
+                }, {
+                    id: '2',
+                    name: '项目五',
+                    location: '南京'
+                }, {
+                    id: '3',
+                    name: '项目六',
+                    location: '上海'
+                }, {
+                    id: '1',
+                    name: '项目七',
+                    location: '武汉',
+                }, {
+                    id: '2',
+                    name: '项目八',
+                    location: '北京'
+                }, {
+                    id: '3',
+                    name: '项目九',
+                    location: '上海'
+                }, {
+                    id: '1',
+                    name: '项目十',
+                    location: '苏州',
+                }, {
+                    id: '2',
+                    name: '项目十一',
+                    location: '南京'
+                }, {
+                    id: '3',
+                    name: '项目12',
+                    location: '北京'
+                }, {
+                    id: '1',
+                    name: '项目13',
+                    location: '南京',
+                }, {
+                    id: '2',
+                    name: '项目14',
+                    location: '上海'
+                }, {
+                    id: '3',
+                    name: '项目15',
+                    location: '上海'
+                }];
+                self.projectLists = projects;
+
+                //var url = '/project/all';
+                //getTableDatas(url, params, self.successCallback);
+            },
+
+            successCallback(response){
+                console.info('Get project info success!');
+                var data = response.body;
+                var list = [];
+                for (var i = 0; i < data.list.length; i++) {
+                    var item = data.list[i];
+                    console.dir(item);
+                    var obj = {
+                        id: item.id,
+                        projectName: item.projectName,
+                        description: item.description,
+                        createTime: item.createTime == null ? '' : new Date().setTime(item.createTime),
+                        updateTime: item.updateTime == null ? '' : new Date().setTime(item.updateTime),
+                        author: item.author
+                    };
+                    list.push(obj);
+                }
+                this.projectLists = list;
+            },
+
+            onMouseEnter(item) {
+                this.$emit('hoverItem', item);
+            },
+        },
+    }
+
+</script>
+<style>
+    .left-list {
+        position: relative;
+        float: left;
+        width: 260px;
+        background-color: #fff;
+        margin-bottom: -2000px;
+        padding-bottom: 2000px;
+        min-height: 650px;
+        margin-top: 20px;
+        max-height: 660px;
+        overflow: scroll;
+    }
+
+    #project-list .el-menu {
+        margin-bottom: 50px;
+    }
+
+    #project-list .el-menu-item:first-child {
+         margin-left: 10px;
+    }
+
+</style>

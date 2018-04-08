@@ -1,0 +1,729 @@
+<template>
+    <div id="data-page">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list ref="projectlist" v-on:setFirstId="getFirstId" @editSuccess="editSuccess"></project-list>
+            <div class="nav-right view row-container">
+                <div class="page-title" v-show="id">
+                    {{name}}
+                    <el-tooltip class="item" effect="dark" content="编辑" placement="top-start">
+                        <el-button type="text" icon="el-icon-edit" class="margin-left" @click="editClick"></el-button>
+                    </el-tooltip>
+                    <el-tooltip class="item" effect="dark" content="删除" placement="top-start">
+                        <el-button type="text" icon="el-icon-delete" class="margin-left"
+                                   @click="deleteClick"></el-button>
+                    </el-tooltip>
+                    <el-date-picker class="datePicker"
+                                    @change="dateChange"
+                                    v-model="year"
+                                    align="right"
+                                    type="year"
+                                    :clearable=false
+                                    value-format="yyyy"
+                                    placeholder="请选择年份">
+                    </el-date-picker>
+                </div>
+                <div class="none-item" style="padding-top: 100px" v-show="(allDataList.length==0&&id)||!id">
+                    暂无项目或者您的项目在{{year}}年没有上传参数
+                </div>
+                <div class="chart-container" v-show="allDataList.length!=0">
+                    <!--<div>{{year}}年数据折线图</div>-->
+                    <div class="season-container">
+                        <div class="season-title">供暖季</div>
+                        <line-chart ref="hotTgioLine" :field="'tgio'" :season="'hot'"
+                                    style="margin-right: 100px"></line-chart>
+                        <line-chart ref="hotTuioLine" :field="'tuio'" :season="'hot'"></line-chart>
+                        <line-chart ref="hotGuLine" :field="'gu'" :season="'hot'"></line-chart>
+                        <line-chart ref="hotGgLine" :field="'gg'" :season="'hot'"></line-chart>
+                    </div>
+                    <div class="season-container">
+                        <div class="season-title">供冷季</div>
+                        <line-chart ref="coldTgioLine" :field="'tgio'" :season="'cold'"></line-chart>
+                        <line-chart ref="coldTuioLine" :field="'tuio'" :season="'cold'"></line-chart>
+                        <line-chart ref="coldGuLine" :field="'gu'" :season="'cold'"></line-chart>
+                        <line-chart ref="coldGgLine" :field="'gg'" :season="'cold'"></line-chart>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</template>
+<script>
+    import headTop from '../../Header.vue'
+    import topNav from '../../TopNav.vue'
+    import projectList from './ProjectList.vue'
+    import lineChart from './LineChart.vue'
+    export default {
+        data() {
+            return {
+                id: '',
+                project: {},
+                name: '',
+                year: new Date().getFullYear().toString(),
+                allDataList: [],
+                dataObj: {},
+                timeData: [],
+            }
+        },
+        components: {
+            headTop,
+            topNav,
+            projectList,
+            lineChart
+        },
+        watch: {
+            '$route'(to, from){
+                this.id = this.$route.query.id;
+                if (this.id) {
+                    this.getDatasList();
+                }
+            }
+        },
+        created() {
+            this.id = this.$route.query.id;
+        },
+        mounted(){
+            if (this.id) {
+                this.getDatasList();
+            }
+
+        },
+        methods: {
+            editSuccess(name){
+                this.getDatasList();
+            },
+
+            getFirstId(firstId){
+//                console.log(id);
+                if (!this.$route.query.id && firstId) {
+                    this.$router.push({path: '/data', query: {id: firstId}});
+                    this.getDatasList();
+                }
+            },
+
+            dateChange(){
+                //发送请求,刷新tableData
+                let self = this;
+                this.getDatasList();
+            },
+
+            getDatasList(){
+                //从后台接口获取
+                /* var dataList = [
+                 {
+                 time: '2018/1/1 00:00',
+                 tui: 35.4,//用户侧进口温度
+                 tuo: 35.4,//用户侧出口温度
+                 tgo: 11.1,//地源侧出口温度
+                 tgi: 8.9,//地源侧进口温度
+                 gu: 96.2,//用户侧流量
+                 gg: 326.9//地源侧流量
+                 },
+                 {
+                 time: '2018/1/1 01:00',
+                 tui: 35.2,
+                 tuo: 32.7,
+                 tgo: 11.9,
+                 tgi: 10.3,
+                 gu: 95.6,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 02:00',
+                 tui: 34.7,
+                 tuo: 32.8,
+                 tgo: 10.1,
+                 tgi: 7.5,
+                 gu: 94.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 03:00',
+                 tui: 34.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 93.0,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 04:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 05:00',
+                 tui: 35.4,//用户侧进口温度
+                 tuo: 35.4,//用户侧进口温度
+                 tgo: 11.1,//地源侧出口温度
+                 tgi: 8.9,//地源侧进口温度
+                 gu: 96.2,//用户侧流量
+                 gg: 326.9//地源侧流量
+                 },
+                 {
+                 time: '2018/1/1 06:00',
+                 tui: 35.2,
+                 tuo: 32.7,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.6,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 07:00',
+                 tui: 34.7,
+                 tuo: 32.8,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 94.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 08:00',
+                 tui: 34.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 93.0,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 09:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 10:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 96.6,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 11:00',
+                 tui: 35.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 97.4,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 12:00',
+                 tui: 36.5,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 96.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 13:00',
+                 tui: 36.1,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 122.0,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 14:00',
+                 tui: 36.2,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 118.2,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 15:00',
+                 tui: 35.8,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 124.2,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 16:00',
+                 tui: 35.8,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 124.2,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 17:00',
+                 tui: 35.2,
+                 tuo: 32.7,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.6,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 18:00',
+                 tui: 34.7,
+                 tuo: 32.8,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 94.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 19:00',
+                 tui: 34.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 93.0,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 20:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 21:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 96.6,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 22:00',
+                 tui: 35.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 97.4,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/1 23:00',
+                 tui: 36.5,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 96.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 00:00',
+                 tui: 36.1,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 122.0,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 01:00',
+                 tui: 36.2,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 118.2,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 02:00',
+                 tui: 35.8,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 124.2,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 03:00',
+                 tui: 34.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 93.0,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 04:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 05:00',
+                 tui: 35.4,//用户侧进口温度
+                 tuo: 35.4,//用户侧进口温度
+                 tgo: 11.1,//地源侧出口温度
+                 tgi: 8.9,//地源侧进口温度
+                 gu: 96.2,//用户侧流量
+                 gg: 326.9//地源侧流量
+                 },
+                 {
+                 time: '2018/1/2 06:00',
+                 tui: 35.2,
+                 tuo: 32.7,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.6,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 07:00',
+                 tui: 34.7,
+                 tuo: 32.8,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 94.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 08:00',
+                 tui: 34.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 93.0,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 09:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 10:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 96.6,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 11:00',
+                 tui: 35.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 97.4,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 12:00',
+                 tui: 36.5,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 96.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 13:00',
+                 tui: 36.1,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 122.0,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 14:00',
+                 tui: 36.2,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 118.2,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 15:00',
+                 tui: 35.8,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 124.2,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 16:00',
+                 tui: 35.8,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 124.2,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 17:00',
+                 tui: 35.2,
+                 tuo: 32.7,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.6,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 18:00',
+                 tui: 34.7,
+                 tuo: 32.8,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 94.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 19:00',
+                 tui: 34.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 93.0,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 20:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 95.3,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 21:00',
+                 tui: 35.3,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 96.6,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 22:00',
+                 tui: 35.7,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 97.4,
+                 gg: 326.9
+                 },
+                 {
+                 time: '2018/1/2 23:00',
+                 tui: 36.5,
+                 tuo: 35.4,
+                 tgo: 11.1,
+                 tgi: 8.9,
+                 gu: 96.3,
+                 gg: 326.9
+                 },
+                 ];*/
+                var self = this;
+                let url = GSHP_SERVER_ENDPOINT + '/dataProject/getProjectsParamsByIdAndYear';
+
+                self.$http.get(url, {
+                    params: {
+                        id: self.$route.query.id,
+                        year: self.year
+                    }
+                }).then((response) => {
+                    if (response.status === 200) {
+                        console.log('getProjectsParamsByIdAndYear', self.year, response);
+                        this.name = response.data.name;
+                        this.allDataList = response.data.table;
+                        if (this.allDataList.length === 0) {
+                            return;
+                        }
+                        this.dataObj = this.getDataBar(this.allDataList);
+
+                        this.triggerChild();
+                        /*var obj = this.dataObj;
+                         this.$store.dispatch('initDataState', this.dataObj);*/
+
+                    }
+                });
+
+            },
+            getDataBar(data){
+                let timeArr = [];
+                let hottuiArr = [];
+                let hottuoArr = [];
+                let coldtuiArr = [];
+                let coldtuoArr = [];
+                let hottgiArr = [];
+                let hottgoArr = [];
+                let coldtgiArr = [];
+                let coldtgoArr = [];
+                let hotguArr = [];
+                let coldguArr = [];
+                let hotggArr = [];
+                let coldggArr = [];
+                for (let item of data) {
+
+                    if (item.hot) {
+                        timeArr.push(item['time'] ? item['time'] : '');
+                        hottuiArr.push(item['tui'] ? item['tui'] : '');
+                        hottuoArr.push(item['tuo'] ? item['tuo'] : '');
+                        hottgiArr.push(item['tgi'] ? item['tgi'] : '');
+                        hottgoArr.push(item['tgo'] ? item['tgo'] : '');
+                        hotguArr.push(item['gu'] ? item['gu'] : '');
+                        hotggArr.push(item['gg'] ? item['gg'] : '');
+                    } else {
+                        timeArr.push(item['time'] ? item['time'] : '');
+                        coldtuiArr.push(item['tui'] ? item['tui'] : '');
+                        coldtuoArr.push(item['tuo'] ? item['tuo'] : '');
+                        coldtgiArr.push(item['tgi'] ? item['tgi'] : '');
+                        coldtgoArr.push(item['tgo'] ? item['tgo'] : '');
+                        coldguArr.push(item['gu'] ? item['gu'] : '');
+                        coldggArr.push(item['gg'] ? item['gg'] : '');
+                    }
+                }
+                let obj = {
+                    time: timeArr,
+                    hottui: hottuiArr,
+                    hottuo: hottuoArr,
+                    hottgi: hottgiArr,
+                    hottgo: hottgoArr,
+                    hotgu: hotguArr,
+                    hotgg: hotggArr,
+                    coldtui: coldtuiArr,
+                    coldtuo: coldtuoArr,
+                    coldtgi: coldtgiArr,
+                    coldtgo: coldtgoArr,
+                    coldgu: coldguArr,
+                    coldgg: coldggArr,
+                };
+                return obj;
+            },
+
+            triggerChild(){
+                if (!this.dataObj || this.dataObj.time.length == 0) {
+                    return;
+                }
+                var hotTgioLine = [];
+                var coldTgioLine = [];
+                var hotTuioLine = [];
+                var coldTuioLine = [];
+                var hotGuLine = [];
+                var coldGuLine = [];
+                var hotGgLine = [];
+                var coldGgLine = [];
+                var timeData = [];
+                if (this.dataObj) {
+                    timeData = this.dataObj.time;
+                    hotTgioLine[0] = this.dataObj.hottgi;
+                    hotTgioLine[1] = this.dataObj.hottgo;
+                    coldTgioLine[0] = this.dataObj.coldtgi;
+                    coldTgioLine[1] = this.dataObj.coldtgo;
+                    hotTuioLine[0] = this.dataObj.hottui;
+                    hotTuioLine[1] = this.dataObj.hottuo;
+                    coldTuioLine[0] = this.dataObj.coldtui;
+                    coldTuioLine[1] = this.dataObj.coldtuo;
+                    hotGuLine = this.dataObj.hotgu;
+                    coldGuLine = this.dataObj.coldgu;
+                    hotGgLine = this.dataObj.hotgg;
+                    coldGgLine = this.dataObj.coldgg;
+                    this.$refs.hotTgioLine.getLineData(hotTgioLine, timeData);
+                    this.$refs.coldTgioLine.getLineData(coldTgioLine, timeData);
+                    this.$refs.hotTuioLine.getLineData(hotTuioLine, timeData);
+                    this.$refs.coldTuioLine.getLineData(coldTuioLine, timeData);
+                    this.$refs.hotGuLine.getLineData(hotGuLine, timeData);
+                    this.$refs.coldGuLine.getLineData(coldGuLine, timeData);
+                    this.$refs.hotGgLine.getLineData(hotGgLine, timeData);
+                    this.$refs.coldGgLine.getLineData(coldGgLine, timeData);
+                }
+            },
+
+            editClick(){
+                this.$refs.projectlist.projectAdd(true, this.name);
+            },
+
+            deleteClick() {
+                var self = this;
+                this.$confirm('此操作将永久删除该项目以及该项目的所有参数信息, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    var url = GSHP_SERVER_ENDPOINT + '/dataProject/delete?id=' + self.$route.query.id;
+                    self.$http.delete(url)
+                        .then(function (response) {
+                            if (response.status === 200) {
+                                self.$message({
+                                    type: 'success',
+                                    message: '删除项目"' + self.name + '"成功!'
+                                });
+                                self.$router.push({path: '/data'});
+                                //location.reload();
+                                //self.$refs.projectlist.getAllProjects();
+                            }
+                        })
+                        .catch(function (error) {
+                            self.$message({
+                                type: 'error',
+                                message: '删除失败!'
+                            });
+                        });
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+
+            goBack(){
+                this.$router.go(-1);
+            },
+        }
+    }
+</script>
+<style>
+    .season-container {
+        display: inline-block;
+        width: 48%;
+        text-align: center;
+    }
+
+    .chart-container {
+        margin-top: 40px;
+    }
+
+    .season-title {
+        margin-bottom: 30px;
+    }
+
+    .datePicker {
+        margin-left: 50px;
+        /*position: absolute;
+        right: 50px;
+        top: 85px;*/
+    }
+</style>

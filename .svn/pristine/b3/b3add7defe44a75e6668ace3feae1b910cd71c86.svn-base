@@ -1,0 +1,212 @@
+<template>
+    <div :id="field+'-'+season+'-line-chart'" class="line-chart">
+    </div>
+</template>
+<script>
+    //import echarts from '../../../../lib/echarts.min .js'
+    import echarts from '../../../../lib/echarts.common.min'
+
+    export default {
+        data() {
+            return {
+                id: '',
+                project: {},
+                timeData: [],
+                lineData: [],
+                chartTitle: '',
+                legendColor: ''
+
+            }
+        },
+        props: ['field', 'season'],
+        /*watch: {
+         '$store.state.data': {
+         handler: function (newVal, oldVal) {
+         console.log('$store.state.data');
+         this.getLineData();
+         },
+         deep: true
+         },
+         '$route'(to, from){
+         this.getLineData();
+         }
+         },*/
+
+        methods: {
+            getLineData(lineData, timeData){
+                this.timeData = timeData;
+                this.timeData = this.timeData.map(function (str) {
+                    return str.replace('2018/', '');
+                });
+                this.lineData = lineData;
+                /*switch (this.field) {
+                 case 'tgio':
+                 this.lineData[0] = this.allDataObj.tgi;
+                 this.lineData[1] = this.allDataObj.tgo;
+                 break;
+                 case 'tuio':
+                 this.lineData[0] = this.allDataObj.tui;
+                 this.lineData[1] = this.allDataObj.tuo;
+                 break;
+                 default:
+                 this.lineData = this.allDataObj ? this.allDataObj[this.field] : [];//进行空验证
+                 }*/
+                this.draw();
+            },
+
+            setSeries(){
+                if (this.field == 'tgio' || this.field == 'tuio') {
+                    var seriesItem = [
+                        {
+                            name: "进口温度",
+                            type: 'line',
+                            data: this.lineData[0],
+                            lineStyle: {
+                                color: '#f00'
+                            }
+                        },
+                        {
+                            name: "出口温度",
+                            type: 'line',
+                            data: this.lineData[1],
+                            lineStyle: {
+                                color: '#333'
+                            }
+                        }
+                    ]
+                } else {
+                    var seriesItem = {
+                        name: "流量",
+                        type: 'line',
+                        data: this.lineData
+                    }
+                }
+                return seriesItem;
+            },
+
+            setXAxis(){
+                // var xData = [];       
+                // for(var item in this.timeData){
+                //     console.log(item);
+                //     xData.push(item.getMonth());
+                // };
+                var xAxisObj = {
+                    type: 'category',
+                    boundaryGap: false,
+                    axisLine: {onZero: true},
+                    data: this.timeData
+                };
+                return xAxisObj;
+            },
+
+            setYAxis(){
+                if (this.field == 'tgio' || this.field == 'tuio') {
+                    var yAxisObj = {
+                        type: 'value',
+                        splitLine: {
+                            show: false
+                        },
+                        axisLabel: {
+                            formatter: '{value}°C',
+                            margin: 4
+                        },
+                        grid: {
+                            left: 40
+                        },
+                    };
+                } else {
+                    var yAxisObj = {
+                        type: 'value',
+                        splitLine: {
+                            show: false
+                        },
+                        axisLabel: {
+                            formatter: '{value}m³',
+                            margin: 5
+                        },
+                        grid: {
+                            left: 40
+                        },
+                    };
+                }
+                return yAxisObj;
+            },
+
+            draw(){
+                var self = this;
+                //this.setY();
+                this.setTitle();
+                var yAxis = this.setYAxis();
+                var xAxis = this.setXAxis();
+                var series = this.setSeries();
+
+                var option = {
+                    title: {
+                        text: this.chartTitle,
+                        textStyle: {
+                            fontSize: 13,
+                            fontWeight: 'normal'
+                        }
+                    },
+                    legend: {
+                        data: ['进口温度', '出口温度']
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    series: series,
+                    xAxis: xAxis,
+                    yAxis: yAxis,
+                    dataZoom: [{
+                        realtime: true,
+                    }],
+
+                };
+
+                let chartContainer = document.getElementById(this.field + '-' + this.season + '-line-chart');
+                this.resizeChart();
+                this.myChart = echarts.init(chartContainer);
+                this.myChart.setOption(option);
+                //console.dir(option);
+                //window.addEventListener("resize", this.resizeHandler);
+            },
+
+            setTitle(){
+                switch (this.field) {
+                    case 'tgio':
+                        this.chartTitle = "源侧进出口温度";
+                        break;
+                    case 'tuio':
+                        this.chartTitle = "用侧进出口温度";
+                        break;
+                    case 'gu':
+                        this.chartTitle = "用户侧流量";
+                        break;
+                    case 'gg':
+                        this.chartTitle = "地源侧流量";
+                        break;
+                }
+            },
+
+            resizeChart(){
+                let chartContainer = document.getElementById(this.field + '-' + this.season + '-line-chart');
+//                let width = (window.innerWidth -480) * 0.5;
+                let width = (window.innerWidth - 350) * 0.48 - 10;
+                chartContainer.style.width = width + 'px';
+            },
+
+            goBack(){
+                this.$router.go(-1);
+            },
+        }
+    }
+</script>
+<style>
+    .line-chart {
+        width: 90%;
+        height: 320px;
+        padding-bottom: 25px;
+        /* float: left;*/
+        border: 0px solid;
+    }
+</style>

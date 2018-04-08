@@ -1,0 +1,127 @@
+<template>
+    <div id="home">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list @hoverItem="hoverItem"></project-list>
+            <div id="container">
+                <map-container></map-container>
+            </div>
+        </div>
+        <footer-bottom></footer-bottom>
+    </div>
+
+</template>
+<script>
+	import headTop from '../../Header.vue'
+	import footerBottom from '../../Footer.vue'
+	import topNav from '../../TopNav.vue'
+	import projectList from './ProjectList.vue'
+	import mapContainer from '../Project/map.vue'
+	import AMap from 'AMap'
+
+	var map
+	var markers = []
+	var marker
+	var cityName
+	var ProjectLocation
+	var geocoder
+	var currentId
+    
+	export default {
+		data() {
+			return {}
+		},
+		components: {
+			headTop,
+			footerBottom,
+			topNav,
+			projectList,
+			mapContainer
+		},
+		mounted: function () {
+			this.init()
+		},
+		methods: {
+			init: function () {
+
+				//创建map，默认中心:南京
+				map = new AMap.Map('container', {
+					resizeEnable: true,
+					dragEnable: true,
+					keyboardEnable: true,
+					doubleClickZoom: true,
+					zoom: 6,
+					center: [118.7964700000, 32.0583800000]
+				});
+				/*addToolbar();*/
+				//map小插件
+				AMap.plugin(['AMap.ToolBar', 'AMap.Scale', 'AMap.OverView'],
+					function () {
+						map.addControl(new AMap.ToolBar());
+						map.addControl(new AMap.Scale());
+						map.addControl(new AMap.OverView({
+							isOpen: true
+						}));
+					});
+				//map城市插件
+				AMap.plugin('AMap.Geocoder', function () {
+					geocoder = new AMap.Geocoder({
+						//city默认：“全国”
+					});
+				});
+
+				map.setFitView();
+                //map加载完成后获取中心点城市
+				map.on('complete', getCity);
+                //map停止移动后获取中心点城市
+				map.on('moveend', getCity);
+                //获取中心点城市
+				function getCity() {
+					map.getCity(function (data) {
+						if (data['province'] && typeof data['province'] === 'string') {
+							document.getElementById('info').innerHTML = '城市：' + (data['city'] || data['province']);
+						}
+					});
+				}
+			},
+
+			hoverItem(item) {
+				//防止重复显示
+				if (item.id == currentId) {
+					console.log('same');
+					return;
+				}
+				map.remove(markers);
+				cityName = item.location;
+				console.log(cityName);
+				//根据城市名获取id，定位和添加弹跳标志
+				geocoder.getLocation(cityName, function (status, result) {
+					if (status == 'complete' && result.geocodes.length) {
+						ProjectLocation = [result.geocodes[0].location.getLng(), result.geocodes[0].location.getLat()];
+						console.log(ProjectLocation);
+						marker = new AMap.Marker({
+							position: ProjectLocation,
+							map: map
+						});
+						map.setZoomAndCenter(6, ProjectLocation);
+						marker.setAnimation('AMAP_ANIMATION_BOUNCE');
+						markers.push(marker);
+					}
+				});
+				currentId = item.id;
+			}
+		}
+	}
+</script>
+<style>
+    #container {
+        display: inline-block;
+        margin-left: 260px;
+        margin-top: 140px;
+        margin-bottom: 50px;
+        width: calc(100% - 260px);
+        height: calc(100% - 190px);
+        overflow: hidden;
+    }
+</style>

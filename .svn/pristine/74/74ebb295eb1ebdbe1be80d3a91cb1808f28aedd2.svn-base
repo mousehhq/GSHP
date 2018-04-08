@@ -1,0 +1,17 @@
+/**
+ * Created by haoqianhuang on 2017/12/20.
+ */
+import Vue from 'vue';
+import Vuex from 'vuex';
+import user from './user';
+import calculate from './calculate';
+
+Vue.use(Vuex);
+
+
+export default new Vuex.Store({
+    modules: {
+        user,
+        calculate
+    }
+})

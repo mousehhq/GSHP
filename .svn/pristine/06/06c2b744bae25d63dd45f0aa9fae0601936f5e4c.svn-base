@@ -1,0 +1,11 @@
+<template>
+    <div id="login-page" class="login-wrapper">
+        Login
+    </div>
+</template>
+<script>
+
+</script>
+<style>
+
+</style>

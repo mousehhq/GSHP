@@ -1,0 +1,465 @@
+/**
+ * Created by haoqianhuang on 2017/12/29.
+ */
+//import numbers from 'numbers'
+
+
+const calculate = {
+	/*要显示的表*/
+	tableData: [],
+	/*接下来的数组是后面评估页面需要用到的数据*/
+	deltatuArr: [],
+	quArr: [],
+	qgArr: [],
+	pArr: [],
+	tLArr: [],
+	tHArr: [],
+	copcArr: [],
+	EERArr: [],
+	WTEuArr: [],
+	WTEgArr: [],
+	betaArr: [],
+	//输入：读取excel表并转化为对象数组的data，季节
+	// 输出显示的tableData对象数组，每一项是一个项目的特征值{tgo, tg, a, n, cop, eer}
+	/*特征值
+	 * */
+	getTableData: (data, season) => {
+		let self = calculate;
+		/*清除之前数据*/
+		self.tableData = [];
+		self.deltatuArr = [];
+		self.quArr = [];
+		self.qgArr = [];
+		self.pArr = [];
+		self.tLArr = [];
+		self.tHArr = [];
+		self.copcArr = [];
+		self.EERArr = [];
+		self.WTEuArr = [];
+		self.WTEgArr = [];
+		self.betaArr = [];
+		for (let i = 0; i < data.length; i++) {
+			var item = data[i];
+			//用户侧温差
+			let deltatu = Math.round(Math.abs(parseFloat(item.tui) - parseFloat(item.tuo)) * 100) / 100;
+
+			//用户侧换热量
+			let qu = self._getqu(item);
+
+			//地源侧温差
+			let tg = self._gettg(item);
+
+			//地源侧换热量
+			let qg = Math.round((1 / 3600 * 1000 * 4.18 * tg * item.gg) * 100) / 100;
+
+			//总能耗
+			var p = self._getp(item);
+
+			//机组能效cop
+			let cop = self._getcop(item);
+
+			let tL = self._gettL(item, season);
+			let tH = self._gettH(item, season);
+			//卡诺循环能效copc
+			let copc = self._getcopc(item, season);
+
+			//系统能效EER:
+			let eer = self._getEER(item);
+
+			//水输送效率:
+			let WTEu = self._getWTEu(item);
+
+
+			let WTEg = Math.round((qu / item.pg) * 100) / 100;
+			let beta = self._getBeta(item);
+
+			//a
+			let a = Math.round((item.pl / p) * 100) / 100;
+
+			//n
+			let n = self._getEta(item, season);
+
+			//特征值表子元素
+			let obj = {};
+			obj.id = item.id;
+			obj.name = item.name;
+			obj.tgo = item.tgo;
+			obj.tg = tg;
+			obj.a = a;
+			obj.n = n;
+			obj.cop = cop;
+			obj.eer = eer;
+
+			//其他不显示的数据
+			self.deltatuArr.push(deltatu);
+			self.quArr.push(qu);
+			self.qgArr.push(qg);
+			self.pArr.push(p);
+			self.tLArr.push(tL);
+			self.tHArr.push(tH);
+			self.copcArr.push(copc);
+			self.EERArr.push(eer);
+			self.WTEuArr.push(WTEu);
+			self.WTEgArr.push(WTEg);
+			self.betaArr.push(beta);
+
+			self.tableData.push(obj);
+		}
+		return self.tableData;
+	},
+
+	_gettg: (item) => {
+		return Math.round((Math.abs(item.tgi - item.tgo)) * 100) / 100;
+	},
+
+	_getqu: (item) => {
+
+		let deltatu = Math.round((Math.abs(item.tui - item.tuo)) * 100) / 100;
+
+		return Math.round((1 / 3600 * 1000 * 4.18 * deltatu * item.gu) * 100) / 100;
+	},
+
+	_getcop: (item) => {
+		let qu = calculate._getqu(item);
+
+		return Math.round((qu / item.pl) * 100) / 100;
+	},
+
+	_getcopc: (item, season) => {
+		let tL = calculate._gettL(item, season);
+		let tH = calculate._gettH(item, season);
+
+		return Math.round(((season === 0) ? (tL + 273.15) / (tH - tL) : (tH + 273.15) / (tH - tL)) * 100) / 100;
+	},
+
+	_getp: (item) => {
+		return parseFloat(item.pl) + parseFloat(item.pg) + parseFloat(item.pu);
+	},
+
+	//tL存入数组tLs
+	_gettL: (item, season) => {
+		let tL = (season === 0) ? (parseFloat(item.tui) + parseFloat(item.tuo)) / 2 - 5 : (parseFloat(item.tgi) + parseFloat(item.tgo)) / 2 - 5;
+
+		return Math.round(tL * 100) / 100;
+	},
+
+	//将tH存入数组tHs
+	_gettH: (item, season) => {
+		let tH = (season == 0) ? (parseFloat(item.tgi) + parseFloat(item.tgo)) / 2 + 5 : (parseFloat(item.tui) + parseFloat(item.tuo)) / 2 + 5;
+
+		return Math.round(tH * 100) / 100;
+	},
+
+	_getEER: (item) => {
+		let qu = calculate._getqu(item);
+		let p = calculate._getp(item);
+		if (p === 0) {
+			console.log("数据P异常,导致计算中分母为0");
+			return;
+		}
+
+		return Math.round((qu / p) * 100) / 100;
+	},
+
+	_getWTEu: (item) => {
+		let qu = calculate._getqu(item);
+		if (item.pu === 0) {
+			console.log("数据Pu异常,导致计算中分母为0");
+			return;
+		}
+		return Math.round((qu / item.pu) * 100) / 100;
+	},
+
+	_getBeta: (item) => {
+		let qu = calculate._getqu(item);
+		if (item.pu + item.pg === 0) {
+			console.log("数据Pu或Pg异常,导致计算中分母为0");
+			return;
+		}
+		return Math.round((qu / (parseFloat(item.pu) + parseFloat(item.pg))) * 100) / 100;
+	},
+
+	_getEta: (item, season) => {
+		let cop = calculate._getcop(item);
+		let copc = calculate._getcopc(item, season);
+		if (copc === 0) {
+			console.log("数据copc异常,导致计算中分母为0");
+			return;
+		}
+		return Math.round((cop / copc) * 100) / 100;
+	},
+
+
+	/*权重部分*/
+	_getWtEERt: (data, pos, season) => {
+		let self = calculate;
+		let nArr = self._getArr(data, 'n');
+		let _n = self._getAvg(nArr);
+
+		let tgArr = self._getArr(data, 'tg');
+		let _tg = self._getAvg(tgArr);
+
+		let _tL = self._getAvg(self.tLArr);
+
+		let _beta = self._getAvg(self.betaArr);
+
+		let _tH = self._getAvg(self.tHArr);
+
+		let tgoArr = self._getArr(data, 'tgo');
+
+		let tgoVal = self._getQuar(tgoArr, pos);
+		if ((_n === 0) || (_beta === 0) || (tgoVal === -273.15)) {
+			console.log("计算权重Wt时出现分母为零的情况");
+			return;
+		}
+		if (season === 0) {
+			return [1 / (1 / _n * (tgoVal + 0.5 * _tg + 5 - _tL) / (_tL + 273.15) + 1 / _beta), tgoVal];
+		}
+		else if (season === 1) {
+			return [1 / (1 / _n * (_tH - (tgoVal - 0.5 * _tg - 5) / (_tL + 273.15) + 1 / _beta)), tgoVal];
+		}
+		else {
+			this.$message({
+				message: '季节参数错误',
+				type: 'warning'
+			});
+		}
+	},
+
+	_getWDeltaEER: (data, pos) => {
+		let self = calculate;
+		let copArr = self._getArr(data, 'cop');
+		let _cop = self._getAvg(copArr);
+
+		let _WTE = self._getAvg(self.WTEuArr);
+
+		let eerArr = self._getArr(data, 'eer');
+		let _eer = self._getAvg(eerArr);
+
+		let tgArr = self._getArr(data, 'tg');
+		let _tg = self._getAvg(tgArr);
+
+		let tgVal = self._getQuar(tgArr, pos);
+
+		if ((_cop === 0) || (_WTE === 0) || (tgVal === -273.15) || (_eer === 0)) {
+			console.log("计算权重Wdelta时出现分母为零的情况");
+			return;
+		}
+		return [1 / (1 / _cop + 1 / _WTE + _tg / tgVal * (1 / _eer - 1 / _cop - 1 / _WTE)), tgVal];
+	},
+
+	_getWEtaEQuar: (data, pos) => {
+		let self = calculate;
+		let copArr = self._getArr(data, 'cop');
+		let _cop = self._getAvg(copArr);
+
+		let _beta = self._getAvg(self.betaArr);
+
+		let nArr = self._getArr(data, 'n');
+		let nVal = self._getQuar(nArr, pos);
+		if ((_cop === 0) || (_beta === 0) || (nVal === 0)) {
+			console.log("计算权重Wdelta时出现分母为零的情况");
+			return;
+		}
+		return [1 / (1 / (nVal * _cop) + 1 / _beta), nVal];
+	},
+
+	_getWaEER: (data, pos) => {
+		let self = calculate;
+		let nArr = self._getArr(data, 'n');
+		let _n = self._getAvg(nArr);
+
+		let copArr = self._getArr(data, 'cop');
+		let _cop = self._getAvg(copArr);
+
+		let aArr = self._getArr(data, 'a');
+		let aVal = self._getQuar(aArr, pos);
+		return [aVal * _n * _cop, aVal];
+	},
+
+	_getW: (data, type, season) => {
+		let self = calculate;
+		let EERslt1;
+		let EERslt2;
+
+		switch (type) {
+			case 't':
+				EERslt1 = self._getWtEERt(data, 1, season);
+				EERslt2 = self._getWtEERt(data, 3, season);
+				break;
+			case 'delta':
+				EERslt1 = self._getWDeltaEER(data, 1);
+				EERslt2 = self._getWDeltaEER(data, 3);
+				break;
+			case 'n':
+				EERslt1 = self._getWEtaEQuar(data, 1);
+				EERslt2 = self._getWEtaEQuar(data, 3);
+				break;
+			case 'a':
+				EERslt1 = self._getWaEER(data, 1);
+				EERslt2 = self._getWaEER(data, 3);
+				break;
+			default:
+				console.log("参数错误");
+				break;
+		}
+
+		let _EER1 = EERslt1[0];
+		let _EER2 = EERslt2[0];
+		let _denom1 = EERslt1[1];
+		let _denom2 = EERslt2[1];
+		if (_denom1 === _denom2) {
+			console.log("计算权重W时出现分母为0的情况");
+			return;
+		}
+
+		return (_EER1 - _EER2) / (_denom1 - _denom2);
+	},
+
+	_getWVector: (data, season) => {
+		let self = calculate;
+		let Wt = self._getW(data, 't', season);
+		let Wdelta = self._getW(data, 'delta', season);
+		let Weta = self._getW(data, 'n', season);
+		let Wa = self._getW(data, 'a', season);
+		let arr = [];
+		arr.push(Wt, Wdelta, Weta, Wa);
+		return arr;
+	},
+
+	_getX: (table) => {
+		let A = [];
+		let Ao = [];
+		//将字符串前后空格去掉，解析为浮点数
+		for (let row of table) {
+			row.tgo = parseFloat(row.tgo);
+			row.tg = parseFloat(row.tg);
+			row.a = parseFloat(row.a);
+			row.n = parseFloat(row.n);
+			row.cop = parseFloat(row.cop);
+			row.eer = parseFloat(row.eer);
+		}
+		//存为二维数组
+		for (let row of table) {
+			let temp = [];
+			temp.push(row.tgo);
+			temp.push(row.tg);
+			temp.push(row.a);
+			temp.push(row.n);
+			A.push(temp);
+		}
+
+		//获得均值
+		let arr0 = calculate._getArr(table, 'tgo');
+		let avg0 = 0;
+		for (let i = 0; i < arr0.length; i++) {
+			avg0 += arr0[i];
+		}
+		let AoArrl = [];
+		AoArrl.push(avg0 / arr0.length);
+		Ao.push(AoArrl);
+
+		let arr1 = calculate._getArr(table, 'tg');
+		let avg1 = 0;
+		for (let i = 0; i < arr1.length; i++) {
+			avg1 += arr1[i];
+		}
+		let AoArr2 = [];
+		AoArr2.push(avg1 / arr1.length);
+		Ao.push(AoArr2);
+
+		let arr2 = calculate._getArr(table, 'a');
+		let avg2 = 0;
+		for (let i = 0; i < arr2.length; i++) {
+			avg2 += arr2[i];
+		}
+		let AoArr3 = [];
+		AoArr3.push(avg2 / arr2.length);
+		Ao.push(AoArr3);
+
+		let arr3 = calculate._getArr(table, 'n');
+		let avg3 = 0;
+		for (let i = 0; i < arr3.length; i++) {
+			avg3 += arr3[i];
+		}
+		let AoArr4 = [];
+		AoArr4.push(avg3 / arr3.length);
+		Ao.push(AoArr4);
+
+		//获得偏差矩阵
+		for (let i = 0; i < A.length; i++) {
+			for (let j = 0; j < 4; j++) {
+				A[i][j] = parseFloat(A[i][j]) - parseFloat(Ao[j]);
+			}
+		}
+		return A;
+	},
+
+	/*最终结果*/
+	getDeltaEER: (data, season) => {
+		let self = calculate;
+		let DeltaEER = [];
+		let _vector = self._getWVector(data, season);
+		let X = self._getX(data);
+		for (let i = 0; i < X.length; i++) {
+			DeltaEER[i] = 0;
+		}
+		for (let i = 0; i < X.length; i++) {
+			for (let j = 0; j < 4; j++) {
+				DeltaEER[i] += Math.round(X[i][j] * _vector[j] * 100) / 100;
+			}
+		}
+		let FinalArr = [];
+		let idArr = self._getArr(data, 'id');
+		for (let i = 0; i < DeltaEER.length; i++) {
+			let obj = {};
+			obj.id = idArr[i];
+			obj.value = DeltaEER[i];
+			FinalArr.push(obj);
+		}
+		return FinalArr;
+	},
+
+	_getArr: (data, key) => {
+		let Arr = [];
+		for (let item of data) {
+			Arr.push(item[key])
+		}
+		return Arr;
+	},
+
+
+	_getAvg: (data) => {
+		let avg = 0;
+		for (let i = 0; i < data.length; i++) {
+			avg += parseFloat(data[i]);
+		}
+		avg = avg / data.length;
+		return avg;
+	},
+
+
+	//计算四分位数,输入：数组和上/下分位，pos为1或者3
+	_getQuar: (arr, pos) => {
+		let self = calculate;
+		let quartile;
+		let sortedArr = self._sortArr(arr);
+		let num = (sortedArr.length + 1) / 4 * pos;
+		let integer = parseInt(num);
+		//分为整数和小数两种情况
+		if (integer == num) {
+			quartile = sortedArr[num - 1];
+		}
+		else {
+			quartile = sortedArr[integer - 1] * 0.25 + sortedArr[integer] * 0.75;
+		}
+		return quartile;
+	},
+
+	_sortArr: (arr) => {
+		return arr.sort(function (a, b) {
+			return a - b;
+		});
+	}
+};
+export default calculate

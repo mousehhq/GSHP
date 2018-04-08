@@ -1,0 +1,627 @@
+<template>
+<div class="paramsList">
+        <div class="EERsort">
+            <el-tabs   v-model="activeName" @tab-click="handleClick">
+                <el-tab-pane label="各参数单独排序" name="first"></el-tab-pane>
+                <el-tab-pane label="按EER排序" name="second">
+                    <el-button type="primary"  v-on:click="changeEERsort()">换顺序</el-button>
+                </el-tab-pane>
+            </el-tabs>
+        </div>
+        
+
+        <div class="selectSort" v-if="activeName=='first'">
+            <el-switch @change=drawParam
+                style="display: block; float:left"
+                v-model="value0"
+                active-color="#409EFF"
+                inactive-color="#409EFF"
+                active-icon-class="el-icon-caret-top"
+                inactive-icon-class="el-icon-caret-bottom">
+            </el-switch>
+
+            <el-switch @change=drawParam
+                style="display: block; float:left"
+                v-model="value1"
+                active-color="#409EFF"
+                inactive-color="#409EFF"
+                 active-icon-class="el-icon-caret-top"
+                inactive-icon-class="el-icon-caret-bottom">
+            </el-switch>
+
+            <el-switch @change=drawParam
+                style="display: block; float:left"
+                v-model="value2"
+                active-color="#409EFF"
+                inactive-color="#409EFF"
+                 active-icon-class="el-icon-caret-top"
+                inactive-icon-class="el-icon-caret-bottom">
+            </el-switch>
+
+            <el-switch @change=drawParam
+                style="display: block; float:left"
+                v-model="value3"
+                active-color="#409EFF"
+                inactive-color="#409EFF"
+                 active-icon-class="el-icon-caret-top"
+                inactive-icon-class="el-icon-caret-bottom">
+            </el-switch>
+
+            <el-switch @change=drawParam
+                style="display: block; float:left"
+                v-model="value4"
+                active-color="#409EFF"
+                inactive-color="#409EFF"
+                 active-icon-class="el-icon-caret-top"
+                inactive-icon-class="el-icon-caret-bottom">
+            </el-switch>
+
+            <el-switch @change=drawParam
+                style="display: block; float:left"
+                v-model="value5"
+                active-color="#409EFF"
+                inactive-color="#409EFF"
+                 active-icon-class="el-icon-caret-top"
+                inactive-icon-class="el-icon-caret-bottom">
+            </el-switch>
+     </div>
+
+     
+     <div class="clear"></div>
+     <div id="myChartparam"></div>
+</div>
+</template>
+
+<script>
+export default {
+  data () {
+    return {
+     dataOrigin:{
+
+     },
+     dataProjects:{
+
+     },
+     activeName:'first',
+     dataOrigin_2:{
+     },
+     value0:false,
+     value1:false,
+     value2:false,
+     value3:false,
+     value4:false,
+     value5:false,
+    }
+  },
+  mounted(){
+    this.getParams();
+  },
+  methods:{
+  getParams(){
+      var self = this;
+      var url = 'http://120.79.84.167:3000' + '/projects';
+      self.$http.get(url)
+          .then(function(response){
+            if (response.status===200){
+              self.getDatasList(response.data);
+              self.dataProjects = response.data;
+              self.forEERSort();
+              self.drawParam();
+            }
+          })
+  },
+   handleClick(){
+      if(this.activeName=='second'){
+          this.forEERSort();
+          this.drawParam();
+      }
+      else{
+        if(this.activeName=='first'){      
+          this.drawParam();
+          }
+      }
+  },
+
+  getDatasList(data){
+    let dataOrigin={};
+    let tgo=[];
+    let tg=[];
+    let a=[];
+    let n=[];
+    let cop=[];
+    let eer=[];
+    for(let item of data){
+        tgo.push(item.tgo);
+        tg.push(item.tg);
+        a.push(item.a);
+        n.push(item.n);
+        cop.push(item.cop);
+        eer.push(item.eer);
+    }
+    dataOrigin.tgo=tgo;
+    dataOrigin.tg=tg;
+    dataOrigin.a=a;
+    dataOrigin.n=n;
+    dataOrigin.cop=cop;
+    dataOrigin.eer=eer;
+    this.dataOrigin=dataOrigin;
+  },
+  forEERSort(){
+    console.log('foreer',this.activeName);
+    this.dataOrigin_2 = Object.assign([],this.dataProjects); 
+    this.dataOrigin_2.sort(function(a,b){
+      return a.eer-b.eer;
+    });
+    
+  },
+  changeEERsort(){
+    
+     this.dataOrigin_2 = this.dataOrigin_2.reverse();
+     this.drawParam();
+     
+  },
+  bubbleSort(arr) {
+    var len = arr.length;
+    for (var i = 0; i < len; i++) {
+        for (var j = 0; j < len - 1 - i; j++) {
+            if (arr[j] > arr[j+1]) {        
+                var temp = arr[j+1];        
+                arr[j+1] = arr[j];
+                arr[j] = temp;
+            }
+        }
+    }
+    return arr;
+},
+    drawParam(){
+        let myChart = this.$echarts.init(document.getElementById('myChartparam'));
+
+        //项目数量，dataY为y坐标
+        var dataY=[];
+        for(var i=0;i<this.dataOrigin.tgo.length;i++){
+          dataY.push(i)
+        };
+
+        //取到数据,排序
+        let aaa = Object.assign([],this.dataOrigin.tgo);
+        if(this.activeName=='first'){
+          this.bubbleSort(aaa);
+        }; 
+        //升序
+        if(this.activeName=='first'&&this.value0){      
+          aaa.reverse();     
+          };
+        let dataParam0=[];
+        //判断：每列单独排序，按照EER排序
+        if(this.activeName=='first'){
+            for(let i=0;i<aaa.length;i++){
+              dataParam0.push([0,i,aaa[i]])
+            };
+        }else{
+            for(let i=0;i<aaa.length;i++){
+              dataParam0.push([0,i,this.dataOrigin_2[i].tgo]);
+            };
+        };
+
+
+        //取到数据,排序
+        let bbb = Object.assign([],this.dataOrigin.tg);
+        if(this.activeName=='first'){
+          this.bubbleSort(bbb);
+        }; 
+        //升序
+        if(this.activeName=='first'&&this.value1){      
+          bbb.reverse();     
+          };
+        let dataParam1=[];
+        //判断：每列单独排序，按照EER排序
+        if(this.activeName=='first'){
+            for(let i=0;i<bbb.length;i++){
+              dataParam1.push([0,i,bbb[i]])
+            };
+        }else{
+            for(let i=0;i<bbb.length;i++){
+              dataParam1.push([0,i,this.dataOrigin_2[i].tg]);
+            };
+        };
+
+       //取到数据,排序
+        let ccc = Object.assign([],this.dataOrigin.n);
+        if(this.activeName=='first'){
+          this.bubbleSort(ccc);
+        }; 
+        //升序
+        if(this.activeName=='first'&&this.value2){      
+          ccc.reverse();     
+          };
+        let dataParam2=[];
+        //判断：每列单独排序，按照EER排序
+        if(this.activeName=='first'){
+            for(let i=0;i<ccc.length;i++){
+              dataParam2.push([0,i,ccc[i]])
+            };
+        }else{
+            for(let i=0;i<ccc.length;i++){
+              dataParam2.push([0,i,this.dataOrigin_2[i].n]);
+            };
+        };
+
+        //取到数据,排序
+        let ddd = Object.assign([],this.dataOrigin.a);
+        if(this.activeName=='first'){
+          this.bubbleSort(ddd);
+        }; 
+        //升序
+        if(this.activeName=='first'&&this.value3){      
+          ddd.reverse();     
+          };
+        let dataParam3=[];
+        //判断：每列单独排序，按照EER排序
+        if(this.activeName=='first'){
+            for(let i=0;i<ddd.length;i++){
+              dataParam3.push([0,i,ddd[i]])
+            };
+        }else{
+            for(let i=0;i<ddd.length;i++){
+              dataParam3.push([0,i,this.dataOrigin_2[i].a]);
+            };
+        };
+
+        //取到数据,排序
+        let eee = Object.assign([],this.dataOrigin.cop);
+        if(this.activeName=='first'){
+          this.bubbleSort(eee);
+        }; 
+        //升序
+        if(this.activeName=='first'&&this.value4){      
+          eee.reverse();     
+          };
+        let dataParam4=[];
+        //判断：每列单独排序，按照EER排序
+        if(this.activeName=='first'){
+            for(let i=0;i<eee.length;i++){
+              dataParam4.push([0,i,eee[i]])
+            };
+        }else{
+            for(let i=0;i<eee.length;i++){
+              dataParam4.push([0,i,this.dataOrigin_2[i].cop]);
+            };
+        };
+
+        //取到数据,排序
+        let fff = Object.assign([],this.dataOrigin.eer);
+        if(this.activeName=='first'){
+          this.bubbleSort(fff);
+        }; 
+        //升序
+        if(this.activeName=='first'&&this.value5){      
+          fff.reverse();     
+          };
+        let dataParam5=[];
+        //判断：每列单独排序，按照EER排序
+        if(this.activeName=='first'){
+            for(let i=0;i<fff.length;i++){
+              dataParam5.push([0,i,fff[i]])
+            };
+            
+        }else{
+            for(let i=0;i<fff.length;i++){
+              dataParam5.push([0,i,this.dataOrigin_2[i].eer]);
+            };
+        };
+
+        myChart.setOption({
+         
+        visualMap:{
+        calculable: 'true',
+        min:'0' ,
+        max: '25',
+        show:false
+    },
+    grid: [
+        {left:'5%',top:'20px',width: '11%'},
+        {left:'20%', top:'20px',width: '11%'},
+        { left:'35%',top:'20px',width: '11%'},
+        { left:'50%',top:'20px',width: '11%'},
+        { left:'65%',top:'20px',width: '11%'},
+        {left:'80%',top:'20px', width: '11%'},
+    ],
+    //滚动条
+    // dataZoom:[{
+    //     type:'slider',
+    //     show:true,
+    //    // xAxisIndex:5,
+    //     yAxisIndex:5,
+    //     filterMode:'filter',
+    //     minValueSpan:6,
+    //     maxValueSpan:8,
+    //     orient:'vertical',
+    //     zoomLock:true,
+    // }],
+    series: [{
+        name:'Ⅰ',
+        type: 'heatmap',
+        xAxisIndex: 0,
+        yAxisIndex: 0,
+        data:dataParam0,
+        label: {
+            normal: {
+                show: true,
+                position: 'insideRight'
+            }
+        },
+        itemStyle:{
+            normal:{
+                color:'rgb(128,128,128)',
+                borderWidth:'3',
+            }
+        }
+    },
+    {
+        name:'Ⅱ',
+        type: 'heatmap',
+        xAxisIndex: 1,
+        yAxisIndex: 1,
+        data:dataParam1,
+        label: {
+            normal: {
+                show: true,
+                position: 'insideRight'
+            }
+        },
+        itemStyle:{
+            normal:{
+                color:'rgb(128,128,128)',
+                borderWidth:'3',
+            }
+        }
+    },
+    {
+        name:'Ⅲ',
+        type: 'heatmap',
+        xAxisIndex: 2,
+        yAxisIndex: 2,
+        data:dataParam2,
+        label: {
+            normal: {
+                show: true,
+                position: 'insideRight'
+            }
+        },
+        itemStyle:{
+            normal:{
+                color:'rgb(128,128,128)',
+                borderWidth:'3',
+            }
+        }
+    },
+    {
+        name:'Ⅳ',
+        type: 'heatmap',
+        xAxisIndex: 3,
+        yAxisIndex: 3,
+        data:dataParam3,
+        label: {
+            normal: {
+                show: true,
+                position: 'insideRight'
+            }
+        },
+        itemStyle:{
+            normal:{
+                color:'rgb(128,128,128)',
+                borderWidth:'3',
+            }
+        }
+    },
+    {
+        name:'Ⅴ',
+        type: 'heatmap',
+        xAxisIndex: 4,
+        yAxisIndex: 4,
+        data:dataParam4,
+        label: {
+            normal: {
+                show: true,
+                position: 'insideRight'
+            }
+        },
+        itemStyle:{
+            normal:{
+                color:'rgb(128,128,128)',
+                borderWidth:'3',
+            }
+        }
+    },
+    {
+        name:'Ⅵ',
+        type: 'heatmap',
+        xAxisIndex: 5,
+        yAxisIndex: 5,
+        data:dataParam5,
+        label: {
+            normal: {
+                show: true,
+                position: 'insideRight'
+            }
+        },
+        itemStyle:{
+            normal:{
+                color:'rgb(128,128,128)',
+                borderWidth:'3',
+            }
+        }
+    }],
+    xAxis: [{
+        gridIndex: 0,
+        show:true,
+        position:"top",
+        data: ['tg'],
+        boundaryGap: false,
+        type: "category",
+        axisLine:{
+            show:false,
+        },
+        axisTick:{
+            show:false
+        }},
+        {
+        gridIndex: 1,
+        show:true,
+        position:"top",
+        data: ['t'],
+        boundaryGap: false,
+        axisLabel:{
+          interval:0
+        },
+        type: "category",
+        axisLine:{
+            show:false,
+        },
+        axisTick:{
+            show:false
+        }},
+        {
+        gridIndex: 2,
+        data: ['∆t'],
+        position:"top",
+        boundaryGap: false,
+        type: "category",
+        axisLine:{
+            show:false,
+        },
+        axisTick:{
+            show:false
+        }},
+        {
+        gridIndex: 3,
+        data: ['α'],
+        position:"top",
+        boundaryGap: false,
+        type: "category",
+        axisLine:{
+            show:false,
+        },
+        axisTick:{
+            show:false
+        }},
+        {
+        gridIndex: 4,
+        data: ['η'],
+        position:"top",
+        boundaryGap: false,
+        type: "category",
+        axisLine:{
+            show:false,
+        },
+        axisTick:{
+            show:false
+        }},
+        {
+        gridIndex: 5,
+        data: ['EER'],
+        position:"top",
+        boundaryGap: false,
+        type: "category",
+        axisLine:{
+            show:false,
+        },
+        axisTick:{
+            show:false
+        }}
+    ],
+    yAxis: [{
+        gridIndex: 0,
+        show:false,
+        data:dataY,
+        splitArea: {
+            "show":false
+        },
+        type: "category",
+        },
+        {
+         gridIndex: 1,
+        show:false,
+        data: dataY,
+        splitArea: {
+            show:false
+        },
+        type: "category", 
+        },
+        {
+         gridIndex: 2,
+        show:false,
+        data: dataY,
+        splitArea: {
+            show:false
+        },
+        type: "category", 
+        },
+        {
+         gridIndex: 3,
+        show:false,
+        data:dataY,
+        splitArea: {
+            show:false
+        },
+        type: "category", 
+        },
+        {
+         gridIndex: 4,
+        show:false,
+        data: dataY,
+        splitArea: {
+            show:false
+        },
+        type: "category", 
+        },
+        {
+         gridIndex: 5,
+        show:false,
+        data:dataY,
+        splitArea: {
+            show:false
+        },
+        type: "category", 
+        }
+    ]
+ 
+});
+}}
+}
+
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped>
+.selectSort{
+  width:100%;
+  height:50px;
+  margin-left:2%;
+  padding-left:3%;
+  padding-right:3%;
+  margin-top:20px;
+}
+.el-switch{
+  margin:0;
+  width:15%;
+  height:30px;
+}
+.el-button{
+    margin:20px 50px;
+}
+
+#myChartparam{
+  width:100%;
+  height:460px;
+  float:left;
+}
+
+.clear{
+  clear:both
+  }
+.paramsList{
+  width:70%;
+  float:left;
+}
+</style>

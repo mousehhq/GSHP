@@ -1,0 +1,854 @@
+<template>
+    <div class="paramsList">
+        <div class="EERsort">
+            <el-tabs v-model="activeName" type="card" @tab-click="tabClick">
+                <el-tab-pane label="各参数单独排序" name="first"></el-tab-pane>
+                <el-tab-pane label="按EER排序" name="second">
+                </el-tab-pane>
+            </el-tabs>
+        </div>
+
+        <div class="selectSort" v-if="activeName=='first'">
+            <div class="sorts" @click="handleClicks('isTgoActive')">
+                <span class="params">t<sub>g,o</sub></span>
+                <span>
+                    <i class="el-icon-caret-top" :class="{active:sortColum.isTgoActive}"></i>
+                    <i class="el-icon-caret-bottom" :class="{active:!sortColum.isTgoActive}"></i>
+                </span>
+            </div>
+            <div class="sorts" @click="handleClicks('isTgActive')"><span class="params">∆t<sub>g</sub></span><span><i
+                    class="el-icon-caret-top" :class="{active:sortColum.isTgActive}"></i><i class="el-icon-caret-bottom"
+                                                                                            :class="{active:!sortColum.isTgActive}"></i></span>
+            </div>
+            <div class="sorts" @click="handleClicks('isaActive')"><span class="params">α</span><span><i
+                    class="el-icon-caret-top" :class="{active:sortColum.isaActive}"></i><i class="el-icon-caret-bottom"
+                                                                                           :class="{active:!sortColum.isaActive}"></i></span>
+            </div>
+            <div class="sorts" @click="handleClicks('isnActive')"><span class="params">η</span><span><i
+                    class="el-icon-caret-top" :class="{active:sortColum.isnActive}"></i><i class="el-icon-caret-bottom"
+                                                                                           :class="{active:!sortColum.isnActive}"></i></span>
+            </div>
+            <div class="sorts" @click="handleClicks('isCopActive')"><span class="params">COP</span><span><i
+                    class="el-icon-caret-top" :class="{active:sortColum.isCopActive}"></i><i
+                    class="el-icon-caret-bottom"
+                    :class="{active:!sortColum.isCopActive}"></i></span>
+            </div>
+            <div class="sorts" @click="handleClicks('isEerActive')"><span class="params">EER</span><span><i
+                    class="el-icon-caret-top" :class="{active:sortColum.isEerActive}"></i><i
+                    class="el-icon-caret-bottom"
+                    :class="{active:!sortColum.isEerActive}"></i></span>
+            </div>
+            <div class="clear"></div>
+        </div>
+        <div class="selectSort" v-if="activeName=='second'">
+            <div class="sorts"><span class="params">t<sub>g,o</sub></span></div>
+            <div class="sorts"><span class="params">∆t<sub>g</sub></span></div>
+            <div class="sorts"><span class="params">α</span></div>
+            <div class="sorts"><span class="params">η</span></div>
+            <div class="sorts"><span class="params">COP</span></div>
+            <div class="sorts" @click="changeEERsort()"><span class="params">EER</span><span><i
+                    class="el-icon-caret-top" :class="{active:isActiveEer}"></i><i class="el-icon-caret-bottom"
+                                                                                   :class="{active:!isActiveEer}"></i></span>
+            </div>
+            <div class="clear"></div>
+        </div>
+        <div class="clear"></div>
+        <div id="myChartparam"></div>
+    </div>
+</template>
+
+<script>
+    export default {
+        data () {
+            return {
+                //对象数组，每个元素存一个项目的6个参数
+                dataProjects: [],
+                //6个数组，每个数组是所有项目一个参数的集合
+                dataOrigin: {},
+                activeName: 'first',
+                eerMark: -1,
+                //控制各参数排列顺序的值
+                sortColum: {
+                    isTgoActive: true,
+                    isTgActive: true,
+                    isaActive: true,
+                    isnActive: true,
+                    isCopActive: true,
+                    isEerActive: true,
+                    isActiveEer: true
+                },
+                dataOrigin_2: {},
+                markParams:{}
+
+            }
+        },
+
+        
+
+        methods: {
+            /*getParams(){
+             var self = this;
+             var url = GSHP_SERVER_ENDPOINT + '/projects';
+             self.$http.get(url)
+             .then(function (response) {
+             if (response.status === 200) {
+             self.getDatasList(response.data);
+             self.dataProjects = response.data;
+             self.forEERSort();
+             self.drawParam();
+             }
+             });
+             },*/
+
+            getDatasList(paramsList,markParams){
+                this.dataProjects = paramsList;
+                this.markParams = markParams;
+                let dataOrigin = {};
+                let tgo = [];
+                let tg = [];
+                let a = [];
+                let n = [];
+                let cop = [];
+                let eer = [];
+                for (let item of paramsList) {
+                    tgo.push(item.tgo);
+                    tg.push(item.tg);
+                    a.push(item.a);
+                    n.push(item.n);
+                    cop.push(item.cop);
+                    eer.push(item.eer);
+                }
+                dataOrigin.tgo = tgo;
+                dataOrigin.tg = tg;
+                dataOrigin.a = a;
+                dataOrigin.n = n;
+                dataOrigin.cop = cop;
+                dataOrigin.eer = eer;
+                this.dataOrigin = dataOrigin;
+
+                //EER排序下，当前项目的定位
+                // this.eerMark = 0;
+
+                this.forEERSort();
+                this.drawParam(markParams);
+            },
+            forEERSort(){
+                this.dataOrigin_2 = Object.assign([], this.dataProjects);
+                this.dataOrigin_2.sort(function (a, b) {
+                    return a.eer - b.eer;
+                });
+
+            },
+            changeEERsort(){
+                this.sortColum.isActiveEer = !this.sortColum.isActiveEer;
+                this.dataOrigin_2 = this.dataOrigin_2.reverse();
+                this.eerMark = this.dataOrigin_2.length - 1 - this.eerMark;
+                this.drawParam();
+
+            },
+
+            drawParam(){
+                let myChart = this.$echarts.init(document.getElementById('myChartparam'));
+
+                //项目数量，dataY为y坐标
+                var dataY = [];
+                for (var i = 0; i < this.dataOrigin.tgo.length; i++) {
+                    dataY.push(i)
+                }
+                ;
+                let theParam0 = -1;
+                let theParam1 = -1;
+                let theParam2 = -1;
+                let theParam3 = -1;
+                let theParam4 = -1;
+                let theParam5 = -1;
+
+
+                //取到数据,排序
+                let fff = Object.assign([], this.dataOrigin.eer);
+                if (this.activeName == 'first') {
+                    fff.sort();
+                }
+
+                //EER升序,降序 定位
+                if (this.activeName == 'first' && !this.sortColum.isEerActive) {
+                    if (this.markParams[0]) {
+                        this.eerMark = fff.indexOf(parseFloat(this.markParams[0].eer));
+                    }
+                    else {
+                        this.eerMark = -1;
+                    }
+
+                }
+                if (this.activeName == 'first' && this.sortColum.isEerActive) {
+                    let eerArr = fff.reverse();
+                    if (this.markParams[0]) {
+                        this.eerMark = eerArr.indexOf(parseFloat(this.markParams[0].eer));
+                    }
+                    else {
+                        this.eerMark = -1;
+                    }
+                }
+
+                let dataParam5 = [];
+                //定位当前项目参数所在的yAxis值
+                if (this.markParams[0]) {
+                    theParam5 = fff.indexOf(parseFloat(this.markParams[0].eer));
+                }
+
+                //判断：每列单独排序，按照EER排序
+                if (this.activeName == 'first') {
+                    for (let i = 0; i < fff.length; i++) {
+                        dataParam5.push([0, i, fff[i]])
+                    }
+                } else {
+                    for (let i = 0; i < fff.length; i++) {
+                        dataParam5.push([0, i, this.dataOrigin_2[i].eer]);
+                    }
+                    theParam5 = this.eerMark;
+                }
+
+                //取到数据,排序
+                let aaa = Object.assign([], this.dataOrigin.tgo);
+                if (this.activeName == 'first') {
+                    aaa.sort();
+                }
+
+                //升序
+                if (this.activeName == 'first' && this.sortColum.isTgoActive) {
+                    aaa.reverse();
+                }
+
+                let dataParam0 = [];
+                //定位当前项目参数所在的yAxis值
+                if (this.markParams[0]) {
+                    theParam0 = aaa.indexOf(parseFloat(this.markParams[0].tgo));
+                }
+                //判断：每列单独排序，按照EER排序
+                if (this.activeName == 'first') {
+                    for (let i = 0; i < aaa.length; i++) {
+                        dataParam0.push([0, i, aaa[i]])
+                    }
+                } else {
+                    for (let i = 0; i < aaa.length; i++) {
+                        dataParam0.push([0, i, this.dataOrigin_2[i].tgo]);
+                    }
+                    theParam0 = this.eerMark;
+                }
+
+
+                //取到数据,排序
+                let bbb = Object.assign([], this.dataOrigin.tg);
+                if (this.activeName == 'first') {
+                    bbb.sort();
+                }
+                //升序
+                if (this.activeName == 'first' && this.sortColum.isTgActive) {
+                    bbb.reverse();
+                }
+                ;
+                let dataParam1 = [];
+                //定位当前项目参数所在的yAxis值
+                if (this.markParams[0]) {
+                    theParam1 = bbb.indexOf(parseFloat(this.markParams[0].tg));
+                }
+                ;
+                //判断：每列单独排序，按照EER排序
+                if (this.activeName == 'first') {
+                    for (let i = 0; i < bbb.length; i++) {
+                        dataParam1.push([0, i, bbb[i]])
+                    }
+                    ;
+                } else {
+                    for (let i = 0; i < bbb.length; i++) {
+                        dataParam1.push([0, i, this.dataOrigin_2[i].tg]);
+                    }
+                    ;
+                    theParam1 = this.eerMark;
+
+                }
+                ;
+
+                //取到数据,排序
+                let ccc = Object.assign([], this.dataOrigin.a);
+                if (this.activeName == 'first') {
+                    ccc.sort();
+                }
+                ;
+                //升序
+                if (this.activeName == 'first' && this.sortColum.isaActive) {
+                    ccc.reverse();
+                }
+                ;
+                let dataParam2 = [];
+                //定位当前项目参数所在的yAxis值
+                if (this.markParams[0]) {
+                    theParam2 = ccc.indexOf(parseFloat(this.markParams[0].a));
+                }
+                ;
+
+                //判断：每列单独排序，按照EER排序
+                if (this.activeName == 'first') {
+                    for (let i = 0; i < ccc.length; i++) {
+                        dataParam2.push([0, i, ccc[i]])
+                    }
+                    ;
+                } else {
+                    for (let i = 0; i < ccc.length; i++) {
+                        dataParam2.push([0, i, this.dataOrigin_2[i].a]);
+                    }
+                    ;
+                    theParam2 = this.eerMark;
+
+                }
+                ;
+
+                //取到数据,排序
+                let ddd = Object.assign([], this.dataOrigin.n);
+                if (this.activeName == 'first') {
+                    ddd.sort();
+                }
+                ;
+                //升序
+                if (this.activeName == 'first' && this.isnActive) {
+                    ddd.reverse();
+                }
+                ;
+                let dataParam3 = [];
+                //定位当前项目参数所在的yAxis值
+                if (this.markParams[0]) {
+                    theParam3 = ddd.indexOf(parseFloat(this.markParams[0].n));
+                }
+                ;
+                //判断：每列单独排序，按照EER排序
+                if (this.activeName == 'first') {
+                    for (let i = 0; i < ddd.length; i++) {
+                        dataParam3.push([0, i, ddd[i]])
+                    }
+                    ;
+                } else {
+                    for (let i = 0; i < ddd.length; i++) {
+                        dataParam3.push([0, i, this.dataOrigin_2[i].n]);
+                    }
+                    ;
+                    theParam3 = this.eerMark;
+                }
+                ;
+
+                //取到数据,排序
+                let eee = Object.assign([], this.dataOrigin.cop);
+                if (this.activeName == 'first') {
+                    eee.sort();
+                }
+                ;
+                //升序
+                if (this.activeName == 'first' && this.sortColum.isCopActive) {
+                    eee.reverse();
+                }
+                ;
+                let dataParam4 = [];
+                //定位当前项目参数所在的yAxis值
+                if (this.markParams[0]) {
+                    theParam4 = eee.indexOf(parseFloat(this.markParams[0].cop));
+                }
+                ;
+                //判断：每列单独排序，按照EER排序
+                if (this.activeName == 'first') {
+                    for (let i = 0; i < eee.length; i++) {
+                        dataParam4.push([0, i, eee[i]])
+                    }
+                    ;
+                } else {
+                    for (let i = 0; i < eee.length; i++) {
+                        dataParam4.push([0, i, this.dataOrigin_2[i].cop]);
+                    }
+                    ;
+                    theParam4 = this.eerMark;
+                }
+                ;
+
+
+                myChart.setOption({
+                    //设置变色范围
+                    visualMap: [
+                        {
+                            //type:continuous,
+                            min: Math.min.apply(null, aaa),
+                            max: Math.max.apply(null, aaa),
+                            precision: 0.1,
+                            show: false,
+                            seriesIndex: 0,
+                        }, {
+                            min: Math.min.apply(null, bbb),
+                            max: Math.max.apply(null, bbb),
+                            precision: 0.1,
+                            show: false,
+                            seriesIndex: 1,
+                        }, {
+                            min: Math.min.apply(null, ccc),
+                            max: Math.max.apply(null, ccc),
+                            precision: 0.01,
+                            show: false,
+                            seriesIndex: 2,
+                        }, {
+                            min: Math.min.apply(null, ddd),
+                            max: Math.max.apply(null, ddd),
+                            precision: 0.01,
+                            show: false,
+                            seriesIndex: 3,
+                        }, {
+                            min: Math.min.apply(null, eee),
+                            max: Math.max.apply(null, eee),
+                            precision: 0.1,
+                            show: false,
+                            seriesIndex: 4,
+                        }, {
+                            min: Math.min.apply(null, fff),
+                            max: Math.max.apply(null, fff),
+                            precision: 0.1,
+                            show: false,
+                            seriesIndex: 5,
+                        }],
+                    grid: [
+                        {left: '5%', top: '20px', width: '11%'},
+                        {left: '20%', top: '20px', width: '11%'},
+                        {left: '35%', top: '20px', width: '11%'},
+                        {left: '50%', top: '20px', width: '11%'},
+                        {left: '65%', top: '20px', width: '11%'},
+                        {left: '80%', top: '20px', width: '11%'},
+                    ],
+                    //滚动条
+                    // dataZoom:[{
+                    //     type:'slider',
+                    //     show:true,
+                    //    // xAxisIndex:5,
+                    //     yAxisIndex:5,
+                    //     filterMode:'filter',
+                    //     minValueSpan:6,
+                    //     maxValueSpan:8,
+                    //     orient:'vertical',
+                    //     zoomLock:true,
+                    // }],
+                    series: [
+                        {
+                            name: 'Ⅰ',
+                            type: 'heatmap',
+                            xAxisIndex: 0,
+                            yAxisIndex: 0,
+                            data: dataParam0,
+                            markPoint: {
+                                symbol: 'pin',
+                                symbolSize: 20,
+                                symbolOffset: [0, '50%'],
+
+                                itemStyle: {
+                                    normal: {
+                                        color: 'skyblue'
+                                    }
+                                },
+                                data: [{
+                                    name: 'theProject',
+                                    yAxis: theParam0
+                                }
+                                ]
+                            },
+                            label: {
+                                normal: {
+                                    show: true,
+                                    position: 'insideRight'
+                                }
+                            },
+                            itemStyle: {
+                                normal: {
+                                    color: 'rgb(128,128,128)',
+                                    borderWidth: '3',
+                                }
+                            }
+                        },
+                        {
+                            name: 'Ⅱ',
+                            type: 'heatmap',
+                            xAxisIndex: 1,
+                            yAxisIndex: 1,
+                            data: dataParam1,
+                            markPoint: {
+                                symbol: 'pin',
+                                symbolSize: 20,
+                                symbolOffset: [0, '50%'],
+                                itemStyle: {
+                                    normal: {
+                                        color: 'skyblue'
+                                    }
+                                },
+                                data: [{
+                                    name: 'theProject',
+                                    yAxis: theParam1
+                                }
+                                ]
+                            },
+                            label: {
+                                normal: {
+                                    show: true,
+                                    position: 'insideRight'
+                                }
+                            },
+                            itemStyle: {
+                                normal: {
+                                    color: 'rgb(128,128,128)',
+                                    borderWidth: '3',
+                                }
+                            }
+                        },
+                        {
+                            name: 'Ⅲ',
+                            type: 'heatmap',
+                            xAxisIndex: 2,
+                            yAxisIndex: 2,
+                            data: dataParam2,
+                            markPoint: {
+                                symbol: 'pin',
+                                symbolSize: 20,
+                                symbolOffset: [0, '50%'],
+                                itemStyle: {
+                                    normal: {
+                                        color: 'skyblue'
+                                    }
+                                },
+                                data: [{
+                                    name: 'theProject',
+                                    yAxis: theParam2
+                                }
+                                ]
+                            },
+                            label: {
+                                normal: {
+                                    show: true,
+                                    position: 'insideRight'
+                                }
+                            },
+                            itemStyle: {
+                                normal: {
+                                    color: 'rgb(128,128,128)',
+                                    borderWidth: '3',
+                                }
+                            }
+                        },
+                        {
+                            name: 'Ⅳ',
+                            type: 'heatmap',
+                            xAxisIndex: 3,
+                            yAxisIndex: 3,
+                            data: dataParam3,
+                            markPoint: {
+                                symbol: 'pin',
+                                symbolSize: 20,
+                                symbolOffset: [0, '50%'],
+                                itemStyle: {
+                                    normal: {
+                                        color: 'skyblue'
+                                    }
+                                },
+                                data: [{
+                                    name: 'theProject',
+                                    yAxis: theParam3
+                                }
+                                ]
+                            },
+                            label: {
+                                normal: {
+                                    show: true,
+                                    position: 'insideRight'
+                                }
+                            },
+                            itemStyle: {
+                                normal: {
+                                    color: 'rgb(128,128,128)',
+                                    borderWidth: '3',
+                                }
+                            }
+                        },
+                        {
+                            name: 'Ⅴ',
+                            type: 'heatmap',
+                            xAxisIndex: 4,
+                            yAxisIndex: 4,
+                            data: dataParam4,
+                            markPoint: {
+                                symbol: 'pin',
+                                symbolSize: 20,
+                                symbolOffset: [0, '50%'],
+                                itemStyle: {
+                                    normal: {
+                                        color: 'skyblue'
+                                    }
+                                },
+                                data: [{
+                                    name: 'theProject',
+                                    yAxis: theParam4
+                                }
+                                ]
+                            },
+                            label: {
+                                normal: {
+                                    show: true,
+                                    position: 'insideRight'
+                                }
+                            },
+                            itemStyle: {
+                                normal: {
+                                    color: 'rgb(128,128,128)',
+                                    borderWidth: '3',
+                                }
+                            }
+                        },
+                        {
+                            name: 'Ⅵ',
+                            type: 'heatmap',
+                            xAxisIndex: 5,
+                            yAxisIndex: 5,
+                            data: dataParam5,
+                            markPoint: {
+                                symbol: 'pin',
+                                symbolSize: 20,
+                                symbolOffset: [0, '50%'],
+                                itemStyle: {
+                                    normal: {
+                                        color: 'skyblue'
+                                    }
+                                },
+                                data: [{
+                                    name: 'theProject',
+                                    yAxis: theParam5
+                                }
+                                ]
+                            },
+                            label: {
+                                normal: {
+                                    show: true,
+                                    position: 'insideRight'
+                                }
+                            },
+                            itemStyle: {
+                                normal: {
+                                    color: 'rgb(128,128,128)',
+                                    borderWidth: '3',
+                                }
+                            }
+                        }],
+                    xAxis: [
+                        {
+                            gridIndex: 0,
+                            show: false,
+                            boundaryGap: false,
+                            type: "category",
+                            axisLine: {
+                                show: false,
+                            },
+                            axisTick: {
+                                show: false
+                            }
+                        },
+                        {
+                            gridIndex: 1,
+                            show: false,
+                            boundaryGap: false,
+                            axisLabel: {
+                                interval: 0
+                            },
+                            type: "category",
+                            axisLine: {
+                                show: false,
+                            },
+                            axisTick: {
+                                show: false
+                            }
+                        },
+                        {
+                            gridIndex: 2,
+                            show: false,
+                            boundaryGap: false,
+                            type: "category",
+                            axisLine: {
+                                show: false,
+                            },
+                            axisTick: {
+                                show: false
+                            }
+                        },
+                        {
+                            gridIndex: 3,
+                            show: false,
+                            boundaryGap: false,
+                            type: "category",
+                            axisLine: {
+                                show: false,
+                            },
+                            axisTick: {
+                                show: false
+                            }
+                        },
+                        {
+                            gridIndex: 4,
+                            show: false,
+                            boundaryGap: false,
+                            type: "category",
+                            axisLine: {
+                                show: false,
+                            },
+                            axisTick: {
+                                show: false
+                            }
+                        },
+                        {
+                            gridIndex: 5,
+                            show: false,
+                            boundaryGap: false,
+                            type: "category",
+                            axisLine: {
+                                show: false,
+                            },
+                            axisTick: {
+                                show: false
+                            }
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            gridIndex: 0,
+                            show: false,
+                            data: dataY,
+                            splitArea: {
+                                "show": false
+                            },
+                            type: "category",
+                        },
+                        {
+                            gridIndex: 1,
+                            show: false,
+                            data: dataY,
+                            splitArea: {
+                                show: false
+                            },
+                            type: "category",
+                        },
+                        {
+                            gridIndex: 2,
+                            show: false,
+                            data: dataY,
+                            splitArea: {
+                                show: false
+                            },
+                            type: "category",
+                        },
+                        {
+                            gridIndex: 3,
+                            show: false,
+                            data: dataY,
+                            splitArea: {
+                                show: false
+                            },
+                            type: "category",
+                        },
+                        {
+                            gridIndex: 4,
+                            show: false,
+                            data: dataY,
+                            splitArea: {
+                                show: false
+                            },
+                            type: "category",
+                        },
+                        {
+                            gridIndex: 5,
+                            show: false,
+                            data: dataY,
+                            splitArea: {
+                                show: false
+                            },
+                            type: "category",
+                        }
+                    ]
+
+                });
+            },
+
+            tabClick(){
+                if (this.activeName == 'second') {
+                    this.forEERSort();
+                    this.drawParam();
+                }
+                else {
+                    if (this.activeName == 'first') {
+                        this.drawParam();
+                    }
+                }
+            },
+
+            handleClicks(activeKey){
+                this.sortColum[activeKey] = !this.sortColum[activeKey];
+                this.drawParam();
+            }
+
+        }
+    }
+
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped>
+    #myChartparam {
+        width: 100%;
+        height: 460px;
+        float: left;
+    }
+
+    .clear {
+        clear: both
+    }
+
+    .paramsList {
+        width: 70%;
+        float: left;
+    }
+
+    .paramsList .EERsort .el-tabs {
+        margin-left: 0;
+    }
+
+    .selectSort {
+        width: 100%;
+        height: 30px;
+        padding: 0 3%;
+        margin-top: 20px;
+    }
+
+    .sorts {
+        margin: 0 auto;
+        width: 15%;
+        height: 30px;
+        float: left;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .sorts span {
+        display: inline-block;
+        vertical-align: top;
+    }
+
+    .sorts span.params {
+        font-size: 18px;
+    }
+
+    .sorts i {
+        display: block;
+        height: 0;
+        border: 4px solid transparent;
+    }
+
+    .active {
+        color: #409EFF;
+    }
+
+
+</style>

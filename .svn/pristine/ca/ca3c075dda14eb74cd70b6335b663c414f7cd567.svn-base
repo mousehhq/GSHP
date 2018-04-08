@@ -1,0 +1,16 @@
+<template>
+    <div id="map-container">
+        <div tabindex="0"></div>
+        <div id="tip">当前位置<br><span id="info"></span></div>
+    </div>
+</template>
+
+<style>
+#tip{
+    z-index:1;
+}
+
+</style>
+<script>
+	export default {}
+</script>

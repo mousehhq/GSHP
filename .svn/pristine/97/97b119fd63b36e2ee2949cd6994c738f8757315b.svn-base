@@ -1,0 +1,208 @@
+<template>
+    <div id="view-project">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list></project-list>
+            <div class="nav-right view row-container">
+                <div>
+                    <h3>查看{{project.name}}</h3>
+                </div>
+                <div class="margin-top-big">
+                    <div class="margin-bottom"><span class="ieds-dot"></span>基本信息</div>
+                    <el-row>
+                        <el-col :span="3">项目名称:</el-col>
+                        <el-col :span="8">{{project.name ? project.name : '&nbsp'}}</el-col>
+                        <el-col :span="3">建筑面积:</el-col>
+                        <el-col :span="8">{{project.area}}m<sup>2</sup></el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="3">地点:</el-col>
+                        <el-col :span="8">{{project.location ? project.location : '&nbsp'}}</el-col>
+                        <el-col :span="3">建筑类型:</el-col>
+                        <el-col :span="8">{{project.type ? project.type : '&nbsp'}}</el-col>
+                    </el-row>
+                    <div class="margin-bottom"><span class="ieds-dot"></span>特征值</div>
+
+                    <el-table
+                            :data="project.eigenvalues"
+                            stripe
+                            style="width: 100%">
+                        <el-table-column
+                                prop="time"
+                                label="时间"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="tgo"
+                                :render-header="renderHeader1"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="tg"
+                                :render-header="renderHeader2">
+                        </el-table-column>
+                        <el-table-column
+                                prop="a"
+                                label="α">
+                        </el-table-column>
+                        <el-table-column
+                                prop="n"
+                                label="η">
+                        </el-table-column>
+
+                        <el-table-column
+                                prop="cop"
+                                label="COP">
+                        </el-table-column>
+                        <el-table-column
+                                prop="eer"
+                                label="EER">
+                        </el-table-column>
+                    </el-table>
+
+                    <el-pagination v-if="totalCnt!=0"
+                                   @size-change="handleSizeChange"
+                                   @current-change="handleCurrentChange"
+                                   :current-page="currentPage4"
+                                   :page-sizes="[5, 10,20, 50]"
+                                   :page-size="100"
+                                   layout="total, sizes, prev, pager, next, jumper"
+                                   :total="totalCnt">
+                    </el-pagination>
+                </div>
+                <div></div>
+            </div>
+        </div>
+        <footer-bottom></footer-bottom>
+    </div>
+</template>
+<script>
+    import headTop from '../../Header.vue'
+    import footerBottom from '../../Footer.vue'
+    import topNav from '../../TopNav.vue'
+    import projectList from './ProjectList.vue'
+
+    export default {
+        data() {
+            return {
+                id: '',
+                project: {},
+                tableData: [],
+                currentPage: 1,
+                pageSize: 5,//每页多少行
+                totalCnt: 2
+            }
+        },
+        components: {
+            headTop,
+            footerBottom,
+            topNav,
+            projectList
+        },
+        created() {
+            this.id = this.$route.query.id;
+
+            this.getItem();
+        },
+        methods: {
+            getItem(url){
+                var self = this;
+                var url = 'http://120.79.84.167:3000' + '/project';
+                var model = {id: this.$route.query.id};
+
+                self.$http.get(url, {params: model})
+                    .then(function (response) {
+                        console.log(response);
+                        if (response.status === 200) {
+                            self.successCallback(response.data);
+                        }
+                    })
+                    .catch(function (error) {
+                        /* self.$alert(error.message, {
+                         confirmButtonText: '确定',
+                         });*/
+                    });
+
+                /*var obj = {
+                 id: '1',
+                 name: '项目一',
+                 location: '南京',
+                 area: '200',
+                 eigenvalues: []
+                 };
+                 this.project = obj;*/
+            },
+
+            successCallback(data){
+                console.info('Get project info success!');
+                var data = data;
+
+                var obj = {
+                    id: data.id,
+                    name: data.project_name,
+                    location: data.position,
+                    area: data.area,
+                    eigenvalues: data.table
+                };
+                this.project = obj;
+            },
+
+            renderHeader1(createElement, {column, $index}) {
+                return createElement(
+                    'span',
+                    {
+                        'class': ''
+                    },
+                    ['t',
+                        createElement('sub', {
+                                attrs: {type: 'text'},
+
+                            }, ['g,o']
+                        )
+                    ]
+                );
+            },
+
+            renderHeader2(createElement, {column, $index}) {
+                return createElement(
+                    'span',
+                    {
+                        'class': ''
+                    },
+                    ['∆t',
+                        createElement('sub', {
+                                attrs: {type: 'text'},
+
+                            }, ['g']
+                        )
+                    ]
+                );
+            },
+
+            handleSizeChange(val) {
+                this.pageSize = val;
+                this.handleCurrentChange(1);
+            },
+
+            handleCurrentChange(val) {
+                this.currentPage = val;
+                this.tableData = this.filteredData.slice((this.currentPage - 1) * this.pageSize, this.currentPage * this.pageSize);
+            },
+        }
+    }
+</script>
+<style>
+    .ieds-dot {
+        display: inline-block;
+        height: 12px;
+        width: 12px;
+        border-radius: 6px;
+        background-color: #409EFF;
+        margin-right: 15px;
+    }
+
+    #view-project .el-row {
+        margin-left: 28px;
+    }
+</style>

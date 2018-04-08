@@ -1,0 +1,230 @@
+<template>
+    <div>
+
+        <div id="project-list" class="left-list">
+            <el-input
+                    placeholder="请输入搜索项目"
+                    v-model="searchValue"
+                    @change="searchMethod">
+                <i slot="suffix" class="el-input__icon"
+                   :class="searchValue==''?'el-icon-search': 'el-icon-close'"
+                   @click="clearSearchValue">
+                </i>
+            </el-input>
+            <div class="project-add">
+                <router-link class="add-button" :to="{path:'projects/add'}">
+                    <i class="el-icon-plus"></i> 新增项目
+                </router-link>
+            </div>
+            <ul role="menubar" class="el-menu"
+                :default-active="('/'+$route.path.split('/')[1]).toLowerCase()">
+                <li v-for="item in projectLists"
+                    role="menuitem" tabindex="-1"
+                    @mouseenter="onMouseEnter(item)"
+                    class="el-menu-item list-item"
+                    :class="{'is-active': item.id==$route.query.id}">
+                    <i class="el-icon-menu"></i>
+                    <span>{{item.name}}</span>
+                    <router-link style="margin-left: 20px" :to="{path: '/projects/view', query: {id:item.id,name:item.name}}">查看
+                    </router-link>
+                    <router-link :to="{path: '/projects/evaluate', query: {id:item.id}}">评估</router-link>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</template>
+<script>
+    export default{
+        data () {
+            return {
+                projectLists: [],
+                allprojectLists: [],
+                searchValue: '',
+            }
+        },
+
+        created() {
+            this.getAllProjects();
+        },
+
+        methods: {
+            getAllProjects(){
+                var self = this;
+                var url = 'http://120.79.84.167:3000' + '/projects';
+                self.$http.get(url)
+                    .then(function (response) {
+                        console.log(response);
+                        if (response.status === 200) {
+                            self.successCallback(response.data);
+                        }
+                    })
+                    .catch(function (error) {
+                        /*self.$alert(error.message, {
+                            confirmButtonText: '确定',
+                        });*/
+                    });
+                /*假数据*/
+                /* var projects = [
+                 {
+                 id: '1',
+                 name: '项目一',
+                 location: '南京',
+                 }, {
+                 id: '2',
+                 name: '项目二',
+                 location: '北京'
+                 }, {
+                 id: '3',
+                 name: '项目三',
+                 location: '上海'
+                 }
+                 , {
+                 id: '1',
+                 name: '项目四',
+                 location: '苏州',
+                 }, {
+                 id: '2',
+                 name: '项目五',
+                 location: '南京'
+                 }, {
+                 id: '3',
+                 name: '项目六',
+                 location: '上海'
+                 }, {
+                 id: '1',
+                 name: '项目七',
+                 location: '武汉',
+                 }, {
+                 id: '2',
+                 name: '项目八',
+                 location: '北京'
+                 }, {
+                 id: '3',
+                 name: '项目九',
+                 location: '上海'
+                 }, {
+                 id: '1',
+                 name: '项目十',
+                 location: '苏州',
+                 }, {
+                 id: '2',
+                 name: '项目十一',
+                 location: '南京'
+                 }, {
+                 id: '3',
+                 name: '项目12',
+                 location: '北京'
+                 }, {
+                 id: '1',
+                 name: '项目13',
+                 location: '南京',
+                 }, {
+                 id: '2',
+                 name: '项目14',
+                 location: '上海'
+                 }, {
+                 id: '3',
+                 name: '项目15',
+                 location: '上海'
+                 }];
+                 self.allprojectLists = projects;
+                 self.projectLists = projects;*/
+
+            },
+
+            successCallback(data){
+                console.info('Get project info success!');
+                var data = data;
+                var list = [];
+                for (var i = 0; i < data.length; i++) {
+                    var item = data[i];
+                    console.dir(item);
+                    var obj = {
+                        id: item.id,
+                        name: item.project_name,
+                        location: item.position,
+                    };
+                    list.push(obj);
+                }
+                this.allprojectLists = list;
+                this.projectLists = list;
+            },
+
+            clearSearchValue(){
+                this.searchValue = '';
+                this.projectLists = this.allprojectLists;
+            },
+
+            searchMethod(){
+                var self = this;
+                self.projectLists = self.allprojectLists.filter(function (item) {
+                    return item.name.indexOf(self.searchValue) > -1;
+                });
+            },
+
+            onMouseEnter(item) {
+                this.$emit('hoverItem', item);
+            },
+        },
+    }
+
+</script>
+<style>
+    .left-list {
+        position: relative;
+        float: left;
+        width: 260px;
+        background-color: #fff;
+        margin-bottom: -2000px;
+        padding-bottom: 2000px;
+        min-height: 650px;
+        margin-top: 20px;
+        max-height: 660px;
+        overflow: scroll;
+        border-right: solid 1px #e6e6e6;
+        text-align: left;
+    }
+
+    #project-list .el-menu {
+        margin-bottom: 50px;
+        border: none;
+        margin-top: 10px;
+    }
+
+    #project-list .el-menu-item:first-child {
+        margin-left: 10px;
+    }
+
+    #project-list .el-input {
+        width: 200px;
+        margin-left: 35px;
+    }
+
+    #project-list .project-add {
+        margin-top: 20px;
+        margin-left: 35px;
+    }
+
+    #project-list .list-item {
+        text-align: left;
+        cursor: auto;
+    }
+
+    #project-list .list-item.is-active {
+        color: #303133;
+        background-color: #def1ff;
+    }
+
+    #project-list .list-item.is-active:hover {
+        background-color: #ecf5ff;
+    }
+
+    #project-list .list-item:hover {
+        background-color: #ecf5ff;
+    }
+
+    #project-list .list-item:last-child {
+        margin-right: 10px;
+    }
+</style>

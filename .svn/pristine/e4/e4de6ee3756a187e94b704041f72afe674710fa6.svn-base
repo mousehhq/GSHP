@@ -1,0 +1,116 @@
+<template>
+    <div id='head-top' class="header">
+        <div class="header-logo" @click="homeClick">
+            <img src="../assets/images/schoolLogo.jpg" height="80"/>
+        </div>
+        <span class="header-name">post evaluation of ground source heat pump</span>
+        <div class="header-right" v-if="!isEmptyObject(userInfo)">
+            <el-dropdown class="account-info" @command="accountClick">
+                <span class="icon-account account-icon"></span>
+                <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item command="username">{{userInfo.username}}</el-dropdown-item>
+                    <el-dropdown-item command="logout">退出</el-dropdown-item>
+                </el-dropdown-menu>
+            </el-dropdown>
+        </div>
+    </div>
+</template>
+<script>
+    export default {
+        data() {
+            return {
+                userInfo: this.$store.state.user,
+            };
+        },
+
+        methods: {
+            isEmptyObject(e) {
+                var t;
+                for (t in e)
+                    return !1;
+                return !0
+            },
+
+            homeClick(){
+                this.$router.push('/Home');
+                //window.location.reload();
+            },
+
+
+            accountClick(command){
+                if (command === 'logout') {
+                    this.logout();
+                } else {
+                    this.$router.push('/Profile');
+                }
+            },
+
+            logout(){
+                this.$confirm('您将本系统, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    this.$store.dispatch('logOut');
+                    this.$router.push('/login');
+                }).catch(() => {
+
+                });
+            }
+        },
+
+    }
+</script>
+<style>
+    .header {
+        height: 80px;
+        line-height: 80px;
+        width: 100%;
+        background-color: #409EFF;
+        text-align: center;
+        position: relative;
+    }
+
+    .header-name {
+        color: white;
+        font-size: 26px;
+        margin-left: 80px;
+    }
+
+    .header-right {
+        position: relative;
+        float: right;
+        width: auto;
+        margin-right: 20px;
+        text-align: left;
+        line-height: normal;
+        font-size: 10px;
+        color: #fff;
+    }
+
+    .header-logo {
+        float: left;
+        cursor: pointer;
+        width: 80px;
+        height: 80px;
+        border: 1px solid #ccc;
+        border-radius: 40px;
+        overflow: hidden;
+    }
+
+    .account-info {
+        margin-top: 35px;
+        cursor: pointer;
+    }
+
+    .account-icon {
+        font-size: 20px;
+        color: #FCFFFE;
+    }
+
+    .account-icon:hover {
+        color: #ffffff;
+        text-shadow: 1px 1px 1px #ccc;
+    }
+
+</style>

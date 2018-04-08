@@ -1,0 +1,68 @@
+<template>
+    <div id="projects">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list></project-list>
+            <div class="nav-right view row-container">
+                <div>
+                    <h3>后评估</h3>
+                </div>
+                <charts :markProject="markProject"></charts>
+            </div>
+        </div>
+        <footer-bottom></footer-bottom>
+    </div>
+</template>
+
+<script>
+    import headTop from '../../Header.vue'
+    import footerBottom from '../../Footer.vue'
+    import topNav from '../../TopNav.vue'
+    import projectList from './ProjectList.vue'
+    import charts from './Charts.vue'
+    import calculate from '../../../common/calculate.js'
+    export default {
+        data() {
+            return {
+                projectList: [],
+                paramsList: [],
+                dataOrigin: {
+                    tgo: [],
+                    tg: [],
+                    a: [],
+                    n: [],
+                    cop: [],
+                    eer: []
+                },
+                dataAll: [],
+                markProject: null
+                
+            }
+        },
+        components: {
+            headTop,
+            footerBottom,
+            topNav,
+            projectList,
+            charts
+        },
+        created() {
+
+        },
+        methods: {
+
+        }
+    }
+</script>
+<style scoped>
+    #container {
+        display: inline-block;
+        margin-left: 260px;
+        margin-top: 140px;
+        margin-bottom: 50px;
+        width: calc(100% - 260px);
+        height: calc(100% - 190px);
+        overflow: hidden;
+    }
+</style>

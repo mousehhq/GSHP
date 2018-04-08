@@ -1,0 +1,116 @@
+<template>
+    <div id="charts">
+        <el-radio-group v-model="season" @change="seasonChange">
+            <el-radio :label="0">供暖季</el-radio>
+            <el-radio :label="1">供冷季</el-radio>
+        </el-radio-group>
+        <el-tabs v-model="activeTab" type="card" @tab-click="tabClick">
+            <el-tab-pane label="各参数单独排序" name="singleSort">
+                <!--:markEigen="markEigen" -->
+                <!--:markDeltaEER="markDeltaEER"-->
+                <params-list ref="singleSortBar" :activeTab="'singleSort'" :isEvaluateItem="isEvaluateItem"
+                             @eersort="eerSortClick"></params-list>
+                <eerparam ref="singleSortScatter" :activeTab="'singleSort'" :isEvaluateItem="isEvaluateItem"
+                          :isEerDesc="isSEerDesc"></eerparam>
+                <div class="none-item" v-if="projectList.length==0">暂无项目或者您的项目没有上传参数</div>
+            </el-tab-pane>
+
+            <el-tab-pane label="按EER排序" name="eerSort">
+                <params-list ref="eerSortBar" :activeTab="'eerSort'" :isEvaluateItem="isEvaluateItem"
+                             @eersort="eerSortClick"></params-list>
+                <eerparam ref="eerSortScatter" :activeTab="'eerSort'" :isEvaluateItem="isEvaluateItem"
+                          :isEerDesc="isEEerDesc"></eerparam>
+                <div class="none-item" v-if="projectList.length==0">暂无项目或者您的项目没有上传参数</div>
+            </el-tab-pane>
+        </el-tabs>
+    </div>
+</template>
+<script>
+    import paramsList from '../Project/ParamsList.vue'
+    import eerparam from '../Project/EERparam.vue'
+    import calculate from '../../../common/calculate.js'
+
+    export default {
+        data() {
+            return {
+                season: 0,//供暖
+                activeTab: 'singleSort',
+                projectList: [],
+                allEigenList: [],//所有项目的特征值
+                allDeltaEERList: [],
+                isSEerDesc: true,
+                isEEerDesc: true,
+                isEvaluateItem: false
+            }
+        },
+        components: {
+            paramsList,
+            eerparam
+        },
+        created() {
+            if (this.$route.query && this.$route.query.id) {
+                this.isEvaluateItem = true;
+            }
+            this.getData();
+        },
+        methods: {
+            getData(){
+                var self = this;
+                let url = GSHP_SERVER_ENDPOINT + '/project/projectAveParams';
+                self.$http.get(url, {
+                    params: {
+                        season: self.season,
+                    }
+                }).then((response) => {
+                    if (response.status === 200) {
+                        self.projectList = response.data;
+                        this.calculateValue();
+                    }
+                })
+            },
+            /*计算特征值和Delta EER*/
+            calculateValue(){
+                this.allEigenList = calculate.getTableData(this.projectList, this.season);//所有项目的特征值
+                this.allDeltaEERList = calculate.getDeltaEER(this.allEigenList, this.season);
+                var obj = {
+                    allEigenList: this.allEigenList,
+                    allDeltaEERList: this.allDeltaEERList
+                };
+                this.$store.dispatch('initState', obj);
+            },
+
+            seasonChange(val){
+                this.getData();
+            },
+
+            tabClick(val){
+                //this.$refs.singleSortBar.getDatasList(val.name);
+            },
+
+            eerSortClick(){
+                if (this.activeTab === 'singleSort') {
+                    this.isSEerDesc = !this.isSEerDesc;
+                } else {
+                    this.isEEerDesc = !this.isEEerDesc;
+                }
+            }
+        }
+    }
+</script>
+<style>
+    #charts .el-radio-group {
+        /*display: block;*/
+        position: absolute;
+        right: 52px;
+        z-index: 300;
+        /*margin: 30px 0 20px;*/
+    }
+
+    div#pane-eerSort:after, div#pane-singleSort:after {
+        content: ".";
+        display: block;
+        height: 0px;
+        clear: both;
+        visibility: hidden;
+    }
+</style>

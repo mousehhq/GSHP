@@ -1,0 +1,196 @@
+<template>
+<div class="paramsList">
+    <div id="paramTgo">
+      <caption>tg,o</caption>
+        <table id="param_1">
+          <tbody>
+            <tr><td class="tgoTd">11</td></tr>
+            <tr><td class="tgoTd">22</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+          </tbody>
+        </table>
+    </div>
+     <div id="paramTg">
+      <caption>tg</caption>
+        <table id="param_2">
+          <tbody>
+            <tr><td class="tgoTd">11</td></tr>
+            <tr><td class="tgoTd">22</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+          </tbody>
+        </table>
+    </div>
+    <div id="paramTg">
+      <caption>Alpha</caption>
+        <table id="param_3">
+          <tbody>
+            <tr><td class="tgoTd">11</td></tr>
+            <tr><td class="tgoTd">22</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+          </tbody>
+        </table>
+    </div>
+    <div id="paramTg">
+      <caption>Eta</caption>
+        <table id="param_4">
+          <tbody>
+            <tr><td class="tgoTd">11</td></tr>
+            <tr><td class="tgoTd">22</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+          </tbody>
+        </table>
+    </div>
+    <div id="paramTg">
+      <caption>COP</caption>
+        <table id="param_5">
+          <tbody>
+            <tr><td class="tgoTd">11</td></tr>
+            <tr><td class="tgoTd">22</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+          </tbody>
+        </table>
+    </div>
+    <div id="paramTg">
+      <caption>EER</caption>
+        <table id="param_6">
+          <tbody>
+            <tr><td class="tgoTd">11</td></tr>
+            <tr><td class="tgoTd">22</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">33</td></tr>
+            <tr><td class="tgoTd">44</td></tr>
+            <tr><td class="tgoTd">55</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+            <tr><td class="tgoTd">66</td></tr>
+          </tbody>
+        </table>
+    </div>
+</div>
+</template>
+
+<script>
+export default {
+  data () {
+    return {
+      msg: 'hi,this is hi'
+    }
+  },
+  mounted(){
+    this.getParamTable();
+    this.param1_Mark();
+    this.param2_Mark();
+  },
+  methods:{
+    getParamTable(){
+    },
+    param1_Mark(){
+      let myParam = 22;
+      let paramTgo=document.getElementById('param_1');
+      for(var i=0;i<paramTgo.rows.length;i++){
+          if(myParam==paramTgo.rows[i].cells[0].innerHTML){
+            paramTgo.rows[i].cells[0].style.border="solid 3px yellow";
+            return;
+          } 
+      }
+    },
+     param2_Mark(){
+      let myParam = 33;
+      let paramTgo=document.getElementById('param_2');
+      for(var i=0;i<paramTgo.rows.length;i++){
+          if(myParam==paramTgo.rows[i].cells[0].innerHTML){
+            paramTgo.rows[i].cells[0].style.border="solid 3px yellow";
+            return;
+          } 
+      }
+    }
+  }
+}
+
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style >
+h1, h2 {
+  font-weight: normal;
+}
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+li {
+  display: inline-block;
+  margin: 0 10px;
+}
+a {
+  color: #42b983;
+}
+#paramTgo,#paramTg{
+  width:13%;
+  float:left;
+  margin-top:100px;
+  
+}
+#param_1,#param_2,#param_3,#param_4,#param_5,#param_6{
+    width:100px;
+    height:300px;
+    
+    margin-left:30px;
+    font-size:10px;
+    text-align:center;
+    background: -webkit-linear-gradient(red, #eee,blue); 
+    background: linear-gradient(red,#eee, blue);
+}
+.tgoTd{
+  border-bottom:solid 0.1px #000;
+  height:10px;} 
+</style>
+

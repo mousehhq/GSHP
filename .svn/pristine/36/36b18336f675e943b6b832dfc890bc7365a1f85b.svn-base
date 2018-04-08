@@ -1,0 +1,30 @@
+/**
+ * Created by haoqianhuang on 2017/12/29.
+ */
+const calculate = {
+
+    //计算四分位数
+    _getQuar: (arr, index) => {
+        var self = calculate;
+        let quartile;
+        let sortedArr = self._sortArr(arr);
+        let num = (sortedArr.length + 1) / 4 * index;
+        let integer = parseInt(num);
+        //分为整数和小数两种情况
+        if (integer === num) {
+            quartile = sortedArr[num - 1];
+        }
+        else {
+            quartile = sortedArr[integer - 1] * 0.25 + sortedArr[integer] * 0.75;
+        }
+        console.log('quartile ' + quartile);
+        return quartile;
+    },
+
+    _sortArr: (arr) => {
+        return arr.sort(function (a, b) {
+            return a - b;
+        });
+    },
+}
+export default  calculate

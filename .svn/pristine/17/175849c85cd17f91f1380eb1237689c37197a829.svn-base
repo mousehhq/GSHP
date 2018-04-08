@@ -1,0 +1,36 @@
+/**
+ * Created by haoqianhuang on 2017/12/20.
+ */
+import Vue from 'vue';
+import Vuex from 'vuex';
+
+Vue.use(Vuex);
+const user = {
+    // JSON.parse方法将一个字符串解析成一个JSON对象
+    state: JSON.parse(sessionStorage.getItem('user')) || {},
+    mutations: {
+        logIn(state, user) {
+            sessionStorage.setItem('user', JSON.stringify(user));
+            Object.assign(state, user);
+        },
+        logOut(state) {
+            sessionStorage.removeItem('user');
+            Object.keys(state).forEach(k => Vue.delete(state, k));
+            Object.assign(state, {})
+        }
+    },
+    actions: {
+        logIn({commit}, user) {
+            commit('logIn', user)
+        },
+        logOut({commit}) {
+            commit('logOut')
+        }
+    }
+};
+
+export default new Vuex.Store({
+    modules: {
+        user
+    }
+})

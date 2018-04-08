@@ -1,0 +1,247 @@
+<template>
+    <div class="eerparam" :class="{border:allDeltaEERList.length>0}">
+        <div :id="activeTab+'Scatter'"></div>
+    </div>
+</template>
+
+<script>
+    import echarts from '../../../../lib/echarts.min .js'
+
+    export default {
+
+        data () {
+            return {
+                allDeltaEERList: [],
+                dataY: [],
+                markDeltaEER: 0,
+                myChart:{}
+            }
+        },
+
+        props: ['activeTab', 'isEerDesc', 'isEvaluateItem'],
+
+        beforeDestroy: function(){
+       
+               window.removeEventListener("resize", this.resizeHandler);
+               
+        },
+
+        watch: {
+
+            '$store.state.evaluate': {
+                handler: function (newVal, oldVal) {
+                    
+                    this.getDatasList();
+                },
+                deep: true
+            },
+            '$route'(to, from){
+                this.getDatasList();
+            },
+            isEerDesc: function (newVal, oldVal) {
+                this.drawLine();
+            }
+        },
+
+        methods: {
+            getDatasList(){
+//                this.allEigenList = JSON.parse(JSON.stringify(this.$store.state.calculate.allEigenList));
+                this.allDeltaEERList = JSON.parse(JSON.stringify(this.$store.state.evaluate.allDeltaEERList));
+                if (this.allDeltaEERList.length === 0) {
+                    return;
+                }
+                if (this.isEvaluateItem) {
+                    var selectedDeltaEERList = this.allDeltaEERList.filter((item) => {
+                        return item.id.toString() == this.$route.query.id;
+                    });
+                    this.markDeltaEER = selectedDeltaEERList.length > 0 ? selectedDeltaEERList[0].value : null;
+                }
+                this.allDeltaEERList.sort(
+                    function (a, b) {
+                        return a.eer - b.eer;
+                    }
+                );
+                this.drawLine();
+            },
+
+            drawLine(){
+                var self = this;
+                this.allDeltaEERList.sort(function (a, b) {
+                    return self.isEerDesc ? a.eer - b.eer : b.eer - a.eer;
+                });
+                this.setY();
+                var series = this.getSeries();
+                var option = {
+                    title: {
+                        show: true,
+                        text: '● (-)bias           △EER',
+                        textStyle: {
+                            color: 'black',
+                            fontSize: '12'
+                        },
+                        subtext: '● (+)bias',
+                        subtextStyle: {
+                            color: 'red',
+                        }
+                    },
+                    tooltip: {
+                        show: true,
+                        trigger: 'axis',
+                        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+                            type: 'cross',
+                            axis: 'x'       // 默认为直线，可选为：'line' | 'shadow'
+                        }
+                    },
+                    xAxis: {
+                        show: true,
+                        type: 'value',
+                        position: 'top',
+                        splitLine: {show: false},
+                        axisTick: {
+                            inside: true
+                        }
+                    },
+                    yAxis: {
+                        type: 'category',
+                        position: 'left',
+                        splitLine: {show: true, lineStyle: {type: 'dashed'}},
+                        axisLine: {show: true},
+                        axisLabel: {show: false},
+                        axisTick: {
+                            show: false,
+                            length: 1,
+                        },
+                        data: this.dataY,
+                    },
+                    series: [series]
+                };
+                
+                    let chartContainer = document.getElementById(this.activeTab + 'Scatter');
+
+                    this.resizeChart();
+                    this.myChart = echarts.init(chartContainer);
+                    this.myChart.setOption(option);
+                    
+                    window.addEventListener("resize", this.resizeHandler);
+                    
+               
+            },
+             resizeHandler(){
+                    this.resizeChart();
+                    this.myChart.resize();
+
+                },
+
+            resizeChart(){
+                
+                    let chartContainer = document.getElementById(this.activeTab + 'Scatter');
+                    let width = (window.innerWidth - 380) * 0.2;
+                    //let height = window.innerHeight;
+                    let height = 40;
+                    chartContainer.style.width = width + 'px';
+                    //chartContainer.style.height = (window.innerHeight) + 'px';
+                    chartContainer.style.height = (height * this.allDeltaEERList.length + 85) + 'px';
+               
+            },
+
+            setY(){
+                var dataY = [];
+                for (var i = 0; i < this.allDeltaEERList.length; i++) {
+                    dataY.push(i)
+                }
+                this.dataY = dataY;
+            },
+
+            getSeries(){
+                var seriesItem = {
+                    name: '△EER',
+                    type: 'scatter',
+                    symbol: 'circle',
+                    label: {
+                        normal: {
+                            show: false
+                        },
+                        emphasis: {
+                            show: true,
+                            position: 'top',
+                            textStyle: {
+                                fontSize: 14,
+                                color: 'blue'
+                            }
+                        }
+                    },
+                    itemStyle: {
+                        itemGap: 20,
+                        normal: {
+                            show: true,
+                            color: function (params) {
+                                var index_color = params.value;
+                                if (index_color >= 0) {
+                                    return 'red';
+                                } else {
+                                    return 'black';
+                                }
+                            },
+                        }
+                    },
+                    data: this.allDeltaEERList
+                };
+
+                if (this.isEvaluateItem) {
+                    var markDeltaEER = this.markDeltaEER;
+                    var markLine = {
+                        animation: false,
+                        label: {
+                            normal: {
+                                show: true,
+                                formatter: function () {
+                                    return markDeltaEER;
+                                }
+                            }
+                        },
+                        lineStyle: {
+                            normal: {
+                                type: 'dotted',
+                                color: 'blue',
+                            }
+                        },
+                        data: [[{
+                            coord: [markDeltaEER, 0],
+                            symbol: 'none'
+                        }, {
+                            coord: [markDeltaEER, this.allDeltaEERList.length - 1],
+                            symbol: 'none'
+                        }]]
+                    };
+                    seriesItem.markLine = markLine;
+                }
+                return seriesItem;
+            },
+
+            getSortedDeltaEER(){
+                this.allDeltaEERList.sort(function (a, b) {
+                    return a.value - b.value;
+                });
+            },
+        }
+    }
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped>
+    .eerparam {
+        width: 20%;
+        height: 100%;
+        margin-right: 80px;
+        margin-top: 15px;
+        
+        float: right;
+    }
+    #singleSortScatter,#eerSortScatter{
+        border: 1px solid;
+    }
+
+   /* .eerparam.border {
+        border: 1px solid;
+    }*/
+</style>

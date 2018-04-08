@@ -1,0 +1,27 @@
+<template>
+  <div id="home">
+    <head-top></head-top>
+    <div class="main-container">
+
+    </div>
+    <footer-bottom></footer-bottom>
+  </div>
+
+</template>
+
+<script>
+  import headTop from '../../Header.vue'
+  import footerBottom from '../../Footer.vue'
+  export default {
+      data() {
+          return {
+
+          }
+      },
+      components: {
+          headTop,
+          footerBottom,
+      }
+  }
+</script>
+<style></style>

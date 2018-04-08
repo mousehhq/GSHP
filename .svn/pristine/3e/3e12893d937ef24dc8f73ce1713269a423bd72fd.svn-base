@@ -1,0 +1,31 @@
+<template>
+    <div id="projects">
+        <div class="main-container">
+            <project-list></project-list>
+            <div class="nav-right view row-container">
+                <div class="page-title">
+                   后评估
+                </div>
+                <charts></charts>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    import projectList from './ProjectList.vue'
+    import charts from './Charts.vue'
+    export default {
+        data() {
+            return {
+            }
+        },
+        components: {
+            projectList,
+            charts
+        },
+    }
+</script>
+<style>
+
+</style>

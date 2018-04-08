@@ -1,0 +1,437 @@
+<template>
+    <div :id="activeTab+'BarContainer'" class="eigen-bar">
+
+        <div class="selectSort" v-if="this.allEigenList.length>0">
+            <div class="sorts">
+                <span class="params">t<sub>g,o</sub></span>
+                <span v-if="activeTab=='singleSort'" @click="sortClick('tgo')">
+                    <i class="el-icon-caret-top" :class="{active:sortColum.tgo}"></i>
+                    <i class="el-icon-caret-bottom" :class="{active:!sortColum.tgo}"></i>
+                </span>
+            </div>
+            <div class="sorts">
+                <span class="params">∆t<sub>g</sub></span>
+                <span v-if="activeTab=='singleSort'" @click="sortClick('tg')">
+                    <i class="el-icon-caret-top" :class="{active:sortColum.tg}"></i>
+                    <i class="el-icon-caret-bottom" :class="{active:!sortColum.tg}"></i>
+                </span>
+            </div>
+            <div class="sorts">
+                <span class="params">α</span>
+                <span v-if="activeTab=='singleSort'" @click="sortClick('a')">
+                    <i class="el-icon-caret-top" :class="{active:sortColum.a}"></i>
+                    <i class="el-icon-caret-bottom" :class="{active:!sortColum.a}"></i>
+                </span>
+            </div>
+            <div class="sorts">
+                <span class="params">η</span>
+                <span v-if="activeTab=='singleSort'" @click="sortClick('n')">
+                    <i class="el-icon-caret-top" :class="{active:sortColum.n}"></i>
+                    <i class="el-icon-caret-bottom" :class="{active:!sortColum.n}"></i>
+                </span>
+            </div>
+            <div class="sorts">
+                <span class="params">COP</span>
+                <span v-if="activeTab=='singleSort'" @click="sortClick('cop')">
+                    <i class="el-icon-caret-top" :class="{active:sortColum.cop}"></i>
+                    <i class="el-icon-caret-bottom" :class="{active:!sortColum.cop}"></i>
+                </span>
+            </div>
+            <div class="sorts">
+                <span class="params">EER</span>
+                <span @click="sortClick('eer')">
+                    <i class="el-icon-caret-top" :class="{active:sortColum.eer}"></i>
+                    <i class="el-icon-caret-bottom" :class="{active:!sortColum.eer}"></i>
+                </span>
+            </div>
+        </div>
+
+        <div :id="activeTab+'Bar'"></div>
+
+    </div>
+</template>
+
+<script>
+
+    import echarts from '../../../../lib/echarts.min .js'
+    import calculate from '../../../common/calculate.js'
+
+    export default {
+        data () {
+            return {
+                dataY: [],
+                allEigenList: [],
+                eigenBarObj: {},
+                markEigen: {},
+                myChart:{},
+                sortColum: {
+                    tgo: false,
+                    tg: false,
+                    a: false,
+                    n: false,
+                    cop: false,
+                    eer: false
+                },
+            }
+        },
+
+        props: ['activeTab', 'isEvaluateItem'],
+        beforeDestroy: function(){
+               window.removeEventListener("resize", this.resizeHandler);       
+        },
+        watch: {
+            // setOption:{
+            //     handler: function(newVal,odVal){
+            //         if(this.myChart){
+            //             window.onresize = function () { 
+            //             console.log("1111111resize"); 
+            //             this.myChart.resize();  
+            //         }  
+            //         }
+            //     },
+            //     deep: true
+            // },
+
+            sortColum: {
+                handler: function (newVal, oldVal) {
+                    this.drawParam();
+                },
+                deep: true
+            },
+            '$store.state.evaluate': {
+                handler: function (newVal, oldVal) {
+                    this.getDatasList();
+                },
+                deep: true
+            },
+            '$route'(to, from){
+                this.getDatasList();
+            }
+        },
+
+        methods: {
+
+            getDatasList(){
+                this.allEigenList = JSON.parse(JSON.stringify(this.$store.state.evaluate.allEigenList));
+                if (this.allEigenList.length === 0) {
+                    return;
+                }
+                if (this.isEvaluateItem) {
+                    var selectedMarkEigenList = this.allEigenList.filter((item) => {
+                        return item.id.toString() === this.$route.query.id.toString();
+                    });
+                    this.markEigen = selectedMarkEigenList[0];
+                }
+                if (this.activeTab === 'singleSort') {
+                    this.eigenBarObj = calculate.getEigenBar(this.allEigenList, this.season);
+                    this.getSortedEigen();
+                } else {
+                    this.allEigenList.sort(function (a, b) {
+                        return a.eer - b.eer;
+                    });
+                    this.eigenBarObj = calculate.getEigenBar(this.allEigenList, this.season);
+                }
+                this.drawParam();
+
+            },
+
+            drawParam(){
+                var self = this;
+                this.setY();
+                var series = this.getSeries();
+                var xAxis = this.getXAxis();
+                var yAxis = this.getYAxis();
+                var option = {
+                    //设置变色范围
+                    visualMap: [
+                        {
+                            //type:continuous,
+                            min: Math.min.apply(null, this.eigenBarObj.tgo),
+                            max: Math.max.apply(null, this.eigenBarObj.tgo),
+                            precision: 0.1,
+                            show: false,
+                            seriesIndex: 0,
+                        }, {
+                            min: Math.min.apply(null, this.eigenBarObj.tg),
+                            max: Math.max.apply(null, this.eigenBarObj.tg),
+                            precision: 0.1,
+                            show: false,
+                            seriesIndex: 1,
+                        }, {
+                            min: Math.min.apply(null, this.eigenBarObj.a),
+                            max: Math.max.apply(null, this.eigenBarObj.a),
+                            precision: 0.01,
+                            show: false,
+                            seriesIndex: 2,
+                        }, {
+                            min: Math.min.apply(null, this.eigenBarObj.n),
+                            max: Math.max.apply(null, this.eigenBarObj.n),
+                            precision: 0.01,
+                            show: false,
+                            seriesIndex: 3,
+                        }, {
+                            min: Math.min.apply(null, this.eigenBarObj.cop),
+                            max: Math.max.apply(null, this.eigenBarObj.cop),
+                            precision: 0.1,
+                            show: false,
+                            seriesIndex: 4,
+                        }, {
+                            min: Math.min.apply(null, this.eigenBarObj.eer),
+                            max: Math.max.apply(null, this.eigenBarObj.eer),
+                            precision: 0.1,
+                            show: false,
+                            seriesIndex: 5,
+                        }],
+                    grid: [
+                        {left: '5%', top: '20px', width: '11%'},
+                        {left: '20%', top: '20px', width: '11%'},
+                        {left: '35%', top: '20px', width: '11%'},
+                        {left: '50%', top: '20px', width: '11%'},
+                        {left: '65%', top: '20px', width: '11%'},
+                        {left: '80%', top: '20px', width: '11%'},
+                    ],
+                    //滚动条
+                    // dataZoom:[{
+                    //     type:'slider',
+                    //     show:true,
+                    //    // xAxisIndex:5,
+                    //     yAxisIndex:5,
+                    //     filterMode:'filter',
+                    //     minValueSpan:6,
+                    //     maxValueSpan:8,
+                    //     orient:'vertical',
+                    //     zoomLock:true,
+                    // }],
+                    series: series,
+                    xAxis: xAxis,
+                    yAxis: yAxis
+
+                };
+
+                let chartContainer = document.getElementById(this.activeTab + 'Bar');
+                this.resizeChart();
+                this.myChart = echarts.init(chartContainer);
+                this.myChart.setOption(option);
+                window.addEventListener("resize", this.resizeHandler);    
+            },
+
+             resizeHandler(){
+                    this.resizeChart();
+                    this.myChart.resize();
+
+                },
+      
+            
+
+            resizeChart(){
+                let chartContainer = document.getElementById(this.activeTab + 'Bar');
+                let width = (window.innerWidth - 380) * 0.7;
+                //let height = window.innerHeight;
+                let height = 40;
+                chartContainer.style.width = width + 'px';
+                //chartContainer.style.height = window.innerHeight + 'px';
+                //chartContainer.style.height = (height * this.allEigenList.length + 40) + 'px';
+                if (this.allEigenList.length === 1) {
+                    chartContainer.style.height = "120px";
+                }else{
+                    chartContainer.style.height = (height * this.allEigenList.length + 40) + 'px';
+                }
+
+            },
+
+            //y坐标
+            setY(){
+                var dataY = [];
+                for (var i = 0; i < this.allEigenList.length; i++) {
+                    dataY.push(i)
+                }
+                this.dataY = dataY;
+            },
+
+            getSeries(){
+                var namedArr = ['tgo', 'tg', 'a', 'n', 'cop', 'eer'];
+                var seriesItem = {
+                    type: 'heatmap',
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'insideRight'
+                        }
+                    },
+                    itemStyle: {
+                        normal: {
+                            color: 'rgb(128,128,128)',
+                            borderWidth: '3',
+                        }
+                    },
+                };
+                var seriesArr = [];
+                for (var i = 0; i < namedArr.length; i++) {
+                    var sItem = JSON.parse(JSON.stringify(seriesItem));
+                    sItem.xAxisIndex = i;
+                    sItem.yAxisIndex = i;
+                    var item = this.getSeriesItem(sItem, namedArr[i], i);
+                    seriesArr.push(item);
+                }
+                return seriesArr;
+            },
+
+            getSeriesItem(seriesItem, key){
+                seriesItem.name = key;
+                var data = [];
+                this.eigenBarObj[key].forEach(function (item, index) {
+                    data.push([0, index, item]);
+                });
+                seriesItem.data = data;
+
+
+                if (this.isEvaluateItem && this.markEigen && this.markEigen[key]) {
+                    var dataObj = {
+                        name: key,
+                        yAxis: this.eigenBarObj[key].indexOf(this.markEigen[key])
+                    };
+                    var markPoint = {
+                        symbol: 'pin',
+                        symbolSize: 20,
+                        symbolOffset: [0, '50%'],
+
+                        itemStyle: {
+                            normal: {
+                                color: 'skyblue'
+                            }
+                        },
+                        data: [dataObj]
+                    };
+                    seriesItem.markPoint = markPoint;
+                }
+
+                return seriesItem;
+            },
+
+            getXAxis(){
+                var namedArr = ['tgo', 'tg', 'a', 'n', 'cop', 'eer'];
+                var xAxisArr = [];
+                for (var i = 0; i < namedArr.length; i++) {
+                    var xAxisObj = {
+                        gridIndex: i,
+                        show: false,
+                        boundaryGap: true,
+                        type: "category",
+                        axisLine: {
+                            show: false,
+                        },
+                        axisTick: {
+                            show: false
+                        }
+                    };
+                    xAxisObj.gridIndex = i;
+                    xAxisArr.push(xAxisObj);
+                }
+                return xAxisArr;
+            },
+
+            getYAxis(){
+                var namedArr = ['tgo', 'tg', 'a', 'n', 'cop', 'eer'];
+                var yAxisArr = [];
+                for (var i = 0; i < namedArr.length; i++) {
+                    var yAxisObj = {
+                        show: false,
+                        boundaryGap: true,
+                        type: "category",
+                        splitArea: {
+                            "show": false
+                        },
+                        data: this.dataY,
+                    };
+                    yAxisObj.gridIndex = i;
+                    yAxisArr.push(yAxisObj);
+                }
+                return yAxisArr;
+            },
+
+            sortClick(key){
+                this.sortColum[key] = !this.sortColum[key];
+                this.sortItem(key);
+                if (key === "eer") {
+                    this.$emit('eersort', this.sortColum.eer);
+                }
+            },
+
+            sortNumber(a, b, key){
+                return this.sortColum[key] ? (a - b) : (b - a);
+            },
+
+            //取到数据,排序
+            getSortedEigen(){
+                this.eigenBarObj.tgo.sort();
+                this.eigenBarObj.tg.sort();
+                this.eigenBarObj.a.sort();
+                this.eigenBarObj.n.sort();
+                this.eigenBarObj.cop.sort();
+                this.eigenBarObj.eer.sort();
+            },
+
+            sortItem(key){
+                this.eigenBarObj[key].reverse();
+            },
+        }
+    }
+    
+
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped>
+    #singleSortBar, #eerSortBar {
+        width: 100%;
+        /*height: 460px;*/
+        float: left;
+        /*border: 1px solid;*/
+    }
+
+    .eigen-bar {
+        width: 70%;
+        float: left;
+    }
+
+    .eigen-bar .EERsort .el-tabs {
+        margin-left: 0;
+    }
+
+    .selectSort {
+        width: 100%;
+        height: 30px;
+        padding: 0 3%;
+        margin-top: 30px;
+    }
+
+    .sorts {
+        margin: 0 auto;
+        width: 15%;
+        height: 30px;
+        float: left;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .sorts span {
+        display: inline-block;
+        vertical-align: top;
+    }
+
+    .sorts span.params {
+        font-size: 18px;
+    }
+
+    .sorts i {
+        display: block;
+        height: 0;
+        border: 4px solid transparent;
+    }
+
+    .active {
+        color: #409EFF;
+    }
+
+
+</style>

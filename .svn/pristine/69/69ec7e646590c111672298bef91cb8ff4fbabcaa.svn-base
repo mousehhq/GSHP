@@ -1,0 +1,144 @@
+<template>
+    <div id='head-top' class="header">
+        <!--<div class="header-logo" @click="homeClick">
+            <img src="../assets/images/schoolLogo.jpg" height="60"/>
+        </div><span class="header-name">Southeast Universtiy</span>-->
+        <div class="header-right" v-if="!isEmptyObject(userInfo)">
+            <el-dropdown class="account-info" @command="accountClick">
+                <span class="icon-account account-icon"></span>
+                <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item command="username">{{userInfo.username}}</el-dropdown-item>
+                    <el-dropdown-item command="logout">退出</el-dropdown-item>
+                </el-dropdown-menu>
+            </el-dropdown>
+        </div>
+        <div class="header-right" v-else="isEmptyObject(userInfo)">
+            <el-button type="primary" plain size="mini" @click="goLogin">登录</el-button>
+        </div>
+    </div>
+</template>
+<script>
+    export default {
+        data() {
+            return {
+                userInfo: this.$store.state.user,
+            };
+        },
+        watch: {
+            '$store.state.user':  {
+                handler: function (newVal, oldVal) {
+                     if (this.isEmptyObject(this.$store.state.user)) { 
+                        this.$alert('会话过期，请重新登录！', '提示', {
+                            confirmButtonText: '确定',
+                        })
+                    } 
+                },
+                deep: true
+            }
+        },
+
+        methods: {
+            isEmptyObject(e) {
+            	console.log(11111,e);
+                var t;
+                for (t in e)
+                    return !1;
+                return !0
+            },
+
+            homeClick(){
+                this.$router.push('/Home');
+                //window.location.reload();
+            },
+
+
+            accountClick(command){
+                if (command === 'logout') {
+                    this.logout();
+                } else {
+                    //this.$router.push('/Profile');
+                }
+            },
+
+            logout(){
+                let self = this;
+                self.$confirm('您将本系统, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    self.$store.dispatch('logOut');
+                    self.$router.push('/login');
+                }).catch(() => {
+
+                });
+            },
+            goLogin(){
+                this.$router.push('/login');
+            }
+        },
+
+    }
+</script>
+<style>
+    .header {
+        height: 30px;
+        line-height: 30px;
+        z-index:20;
+        /*width: 100%;*/
+        /*background-color: #409EFF;*/
+        /*text-align: center;*/
+        position: absolute;
+        top:0;
+        right: 0;
+    }
+
+    .header-name {
+        color: white;
+        font-size: 18px;
+        /*margin-left: 80px;*/
+    }
+
+    .header-right {
+        position: relative;
+        float: right;
+        width: auto;
+        margin-right: 20px;
+        margin-top: 15px;
+        text-align: left;
+        line-height: normal;
+        font-size: 10px;
+        /*color: #fff;*/
+    }
+
+    .header-logo {
+        float: left;
+        cursor: pointer;
+        width: 60px;
+        height: 60px;
+        border: 1px solid #ccc;
+        border-radius: 40px;
+        overflow: hidden;
+    }
+
+    .account-info {
+        margin-top: 5px;
+        cursor: pointer;
+    }
+
+    .account-icon {
+        font-size: 20px;
+        color: #ccc;
+    }
+
+    .account-icon:hover {
+        color: #666;
+        text-shadow: 1px 1px 1px #ccc;
+    }
+
+    .el-menu--horizontal .el-menu-item{
+        height: 50px;
+        line-height: 50px;
+    }
+
+</style>

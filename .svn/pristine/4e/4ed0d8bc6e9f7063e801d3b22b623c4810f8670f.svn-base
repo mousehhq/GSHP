@@ -1,0 +1,96 @@
+/*getDate(data) {
+	let index = data.indexOf(" ");
+	let day = data.slice(0, index);
+	return day;
+},
+
+fillTimeTab(item, dataEnd, season) {
+	let newDate = this.getDate(item.time);
+	let hour = item.time.slice(item.time.indexOf(" "), item.time.indexOf(":"));//找出已经有的小时数
+	if (!dataEnd) {
+		if (this.currentDate != newDate) {
+			if (this.firstIn) {
+				console.log("第一天的数据");//获取到的第一条数据
+				if (season == "hot") {
+					this.hotArrExist.push(hour);
+				} else {
+					this.coldArrExist.push(hour);
+				}
+				this.currentDate = newDate;
+				this.firstIn = false;
+			} else {
+				console.log("日期变了，确认下有没有漏掉的");
+				/!*日期变了，冷暖为处理的数组都得提交,然后清空没处理的数组*!/
+				this.findMissed(this.hotArrExist, this.currentDate, "hot");
+				this.findMissed(this.coldArrExist, this.currentDate, "cold");
+				this.hotArrExist = [];
+				this.coldArrExist = [];
+				/!*保存新的未使用的已存在时间（根据季节）和对应的新的日期*!/
+				this.currentDate = newDate;
+				if (season == "hot") {
+					this.hotArrExist.push(hour);
+				} else {
+					this.coldArrExist.push(hour);
+				}
+			}
+
+		} else {
+			console.log("日期没变，继续找坑");
+			if (season == "hot") {
+				this.hotArrExist.push(hour);
+			} else {
+				this.coldArrExist.push(hour);
+			}
+			//日期没变，而且数据还没结束，把获取的时间数存进数组方便找出不存在的时间
+		}
+	} else {
+		console.log("已经是最后一个信息了");
+		if (this.currentDate != newDate) {
+			console.log("最后一个信息中日期变了，说明最后一天只有一个数据");
+			/!*最后一天日期改变的话前一天的冷暖都提交，今天的也提交；没改变的话只提交当前日期的冷暖*!/
+			this.findMissed(this.hotArrExist, this.currentDate, "hot");
+			this.findMissed(this.coldArrExist, this.currentDate, "cold");
+			this.hotArrExist = [];
+			this.coldArrExist = [];
+			if (season == "hot") {
+				this.hotArrExist.push(hour);
+				this.findMissed(hour, newDate, "hot");
+			} else {
+				this.coldArrExist.push(hour);
+				this.findMissed(hour, newDate, "cold");
+			}
+		} else {
+			if (season == "hot") {
+				this.hotArrExist.push(hour);
+			} else {
+				this.coldArrExist.push(hour);
+			}
+			this.findMissed(this.hotArrExist, this.currentDate, "hot");
+			this.findMissed(this.coldArrExist, this.currentDate, "cold");
+			this.hotArrExist = [];
+			this.coldArrExist = [];
+		}
+
+	}
+},
+
+findMissed(arr, date, season) {
+	let timeLine = [' 0', ' 1', ' 2', ' 3', ' 4', ' 5', ' 6', ' 7', ' 8', ' 9', ' 10', ' 11', ' 12', ' 13', ' 14', ' 15', ' 16', ' 17', ' 18', ' 19', ' 20', ' 21', ' 22', ' 23'];
+	let differentArr = timeLine.diff(arr);//得到两个数组的差集，即为缺失的小时数
+	console.log(date + "当天漏掉的时间点有" + differentArr);
+	let newDate = date;//临时拼接字符串用
+	if (season == "hot") {
+		for (let item of differentArr) {
+			newDate = newDate + " " + item.slice(1, item.length) + ":00";
+			console.log("hot漏掉时间拼起来的新日期" + newDate);
+			this.hotNotExist.push(newDate);
+		}
+	} else {
+		for (let item of differentArr) {
+			newDate = newDate + " " + item.slice(1, item.length) + ":00";
+			console.log("cold漏掉时间拼起来的新日期" + newDate);
+			this.coldNotExist.push(newDate);
+		}
+	}
+	newDate = date;
+},*/

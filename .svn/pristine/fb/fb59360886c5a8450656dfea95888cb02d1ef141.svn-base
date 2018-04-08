@@ -1,0 +1,108 @@
+<template>
+    <div id="charts">
+        <el-radio-group v-model="season" @change="seasonChange">
+            <el-radio :label="0">供暖季</el-radio>
+            <el-radio :label="1">供冷季</el-radio>
+        </el-radio-group>
+        <paramsList ref="bar" :paramsList="paramsList" :markParams="markParams"></paramsList>
+        <eerparam ref="scatter" :dataAll="dataAll" :markEER="markEER"></eerparam>
+    </div>
+</template>
+<script>
+    import paramsList from '../Project/ParamsList.vue'
+    import eerparam from '../Project/EERparam.vue'
+    import calculate from '../../../common/calculate.js'
+    
+    export default {
+        data() {
+            return {
+                season: 0,
+                projectList: [],
+                paramsList: [],
+                /*dataOrigin:{
+                 tgo:[],
+                 tg:[],
+                 a:[],
+                 n:[],
+                 cop:[],
+                 eer:[]
+                 },*/
+                dataAll: [],
+                markParams: [],
+                markEER: [],
+                markProject:[]
+
+            }
+        },
+        props: ['isEvaluateItem'],
+        components: {
+            paramsList,
+            eerparam
+        },
+         watch: {
+            '$route'(to, from){
+                this.getData();
+            }
+        },
+        created() {
+            this.getData();
+        },
+        methods: {
+            getData(){
+                var self = this;
+
+                let url = GSHP_SERVER_ENDPOINT + '/project/projectAveParams';
+                self.$http.get(url, {
+                    params: {
+                        season: 0,
+                    }
+                }).then((response) => {
+                    if (response.status === 200) {
+                        self.projectList = response.data;
+                        
+                        for(let item of self.projectList ){
+                            if(item.id==self.$route.query.id){
+                                self.markProject.push(item);
+                               
+                            }
+                        };
+                        this.calculateEigenValue();
+
+                    }
+                })
+            },
+
+
+            /*计算特征值*/
+            calculateEigenValue(){
+                var projectList = this.projectList;
+                this.paramsList = calculate.getTableData(projectList, this.season);
+                //计算Delta EER
+                this.dataAll = calculate.getDeltaEER(this.paramsList, this.season);
+                //计算当前项目参数
+                if (this.isEvaluateItem) {     
+                    this.markParams = calculate.getTableData(this.markProject, this.season);
+                    for(let item of this.dataAll){                      
+                        if(item.id==this.markProject[this.markProject.length-1].id){
+                            this.markEER[0] = item.value;
+                            console.log("this.markEER",this.markEER,this.markEER[0],item.id)
+                        }
+                    }
+                }
+                this.$refs.bar.getDatasList(this.paramsList,this.markParams);
+                this.$refs.scatter.drawLine(this.dataAll,this.markEER);
+
+            },
+
+            seasonChange(val){
+                this.calculateEigenValue();
+            },
+        }
+    }
+</script>
+<style>
+    .el-radio-group {
+        display: block;
+        margin: 30px 0 20px;
+    }
+</style>

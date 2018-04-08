@@ -1,0 +1,33 @@
+import axios from 'axios'
+import {MessageBox} from 'element-ui'
+
+export default function initAxios () {
+
+	axios.defaults.withCredentials = true;
+
+	axios.interceptors.response.use(function (response) {
+       return response;
+    }, function (err) {
+        // Do something with response error
+        switch(err.response.status) {
+        	case 401:
+        	    if (err.response.data.type === 'request') {
+        	    	err.msg = '会话过期，请重新登录！';
+        	    }
+        	    break;
+        	case 400:
+        	    err.msg = '请求参数错误！';
+        	    break;
+        	case 500:
+        	    err.msg = '服务器内部错误';
+        	    break;
+        	default:
+        }
+        if (err.msg) {
+            MessageBox.alert(err.msg, '提示', {
+                confirmButtonText: '确定',
+            })
+        }
+        throw err;
+    });
+}

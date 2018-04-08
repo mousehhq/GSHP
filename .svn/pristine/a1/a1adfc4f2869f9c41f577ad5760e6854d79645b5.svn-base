@@ -1,0 +1,18 @@
+<template>
+  <div id="top-nav" class="nav-top">
+    <el-menu :default-active="('/'+$route.path.split('/')[1]).toLowerCase()" mode="horizontal" router>
+      <el-menu-item index="/home">首页</el-menu-item>
+      <el-menu-item index="/projects">后评估</el-menu-item>
+      <el-menu-item index="/datebase">数据库</el-menu-item>
+    </el-menu>
+  </div>
+</template>
+<script>
+
+</script>
+<style>
+.nav-top{
+  z-index: 10;
+}
+
+</style>

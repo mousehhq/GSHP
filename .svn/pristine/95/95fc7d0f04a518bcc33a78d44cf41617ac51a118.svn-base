@@ -1,0 +1,38 @@
+<template>
+    <div id="home">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list @hoverItem="hoverItem"></project-list>
+        </div>
+        <footer-bottom></footer-bottom>
+    </div>
+
+</template>
+
+<script>
+    import headTop from '../../Header.vue'
+    import footerBottom from '../../Footer.vue'
+    import topNav from '../../TopNav.vue'
+    import projectList from './ProjectList.vue'
+
+    export default {
+        data() {
+            return {}
+        },
+        components: {
+            headTop,
+            footerBottom,
+            topNav,
+            projectList
+        },
+        methods: {
+
+
+            hoverItem(item) {
+               console.log(item.id)
+            },
+        },
+    }
+</script>
+<style></style>

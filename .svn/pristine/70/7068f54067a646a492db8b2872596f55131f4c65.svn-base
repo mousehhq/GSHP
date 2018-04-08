@@ -1,0 +1,110 @@
+// The Vue build version to load with the `import` command
+// (runtime-only or standalone) has been set in webpack.base.conf with an alias.
+import Vue from 'vue'
+import App from './App'
+import router from './router'
+import store from './Store/store';
+import axios from 'axios'
+import moment from 'moment'
+import 'element-ui/lib/theme-chalk/index.css'
+import './components/Pages/common.css'
+import './appconfig'
+import initNetwork from './config/network'
+
+import {
+    Dropdown,
+    DropdownMenu,
+    DropdownItem,
+    Menu,
+    MenuItem,
+    Card,
+    Form,
+    FormItem,
+    Row,
+    Col,
+    Upload,
+    Button,
+    Table,
+    Pagination,
+    Radio,
+    RadioGroup,
+    TabPane,
+    Tabs,
+    Input,
+    Dialog,
+    TableColumn,
+    DatePicker,
+    MessageBox
+} from 'element-ui'
+
+Vue.prototype.$ELEMENT = {size: 'small'};
+
+Vue.use(Dropdown);
+Vue.use(DropdownItem);
+Vue.use(DropdownMenu);
+Vue.use(Menu);
+Vue.use(MenuItem);
+Vue.use(Card);
+Vue.use(Form);
+Vue.use(FormItem);
+Vue.use(Row);
+Vue.use(Col);
+Vue.use(Upload);
+Vue.use(Button);
+Vue.use(Table);
+Vue.use(Pagination);
+Vue.use(Radio);
+Vue.use(RadioGroup);
+Vue.use(TabPane);
+Vue.use(Tabs);
+Vue.use(Input);
+Vue.use(Dialog);
+Vue.use(TableColumn);
+Vue.use(DatePicker);
+// Vue.use(MessageBox);
+Vue.prototype.$msgbox = MessageBox;
+Vue.prototype.$alert = MessageBox.alert;
+
+Vue.config.devtools = true;
+Vue.config.productionTip = false;
+
+initNetwork();
+Vue.prototype.$http = axios;
+
+Vue.filter('dateFormatterFilter', function (value) {
+
+    if (value === undefined || value === '' || isNaN(value)) {
+        return "";
+    }
+    return moment(parseInt(value)).format("YYYY-MM-DD");
+})
+/*Vue.axios.get(api).then((response) => {
+ console.log(response.data)
+ });*/
+
+router.beforeEach((to, from, next) => {
+    if (to.path.toLowerCase() === '/login') {  // 判断该路由是否需要登录权限
+        next();
+    }
+    else {
+        if (store.state.user) {  // 通过vuex state获取当前的token是否存在
+            next();
+        }
+        else {
+            next({
+                path: '/login',
+                query: {redirect: to.fullPath}  // 将跳转的路由path作为参数，登录成功后跳转到该路由
+            })
+        }
+    }
+});
+
+new Vue({
+    el: '#app',
+    store,
+    router,
+    template: '<App/>',
+    render: h => h(App),
+    components: {App}
+})
+

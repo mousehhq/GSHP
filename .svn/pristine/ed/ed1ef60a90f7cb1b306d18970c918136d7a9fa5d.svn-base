@@ -1,0 +1,561 @@
+<template>
+    <div>
+        <div id="project-list" class="left-list">
+            <el-input
+                    class="search-input"
+                    placeholder="请输入搜索项目"
+                    v-model="searchValue"
+                    @change="searchMethod">
+                <i slot="suffix" class="el-input__icon"
+                   :class="searchValue==''?'el-icon-search': 'el-icon-close'"
+                   @click="clearSearchValue">
+                </i>
+            </el-input>
+            <el-button type="text" size="medium" class="project-add" @click="projectAdd(false)">
+                <i class="el-icon-plus"></i>新增项目
+            </el-button>
+            <div class="project-add" @click="projectAdd">
+                <router-link class="add-button" :to="{path:'/projects/add'}"></router-link>
+            </div>
+
+            <div v-if="!totalCnt" class="none-item">暂无项目</div>
+            <ul v-else role="menubar" class="el-menu"
+                :default-active="('/'+$route.path.split('/')[1]).toLowerCase()">
+                <li v-for="item in projectLists"
+                    role="menuitem" tabindex="-1"
+                    class="el-menu-item list-item"
+                    :class="{'is-active': item.id==$route.query.id}">
+                    <i class="el-icon-menu"></i>
+                    <router-link :title="item.name" class="item-name"
+                                 :to="{path: '/data', query: {id:item.id}}">{{item.name}}
+                    </router-link>
+                </li>
+            </ul>
+
+            <el-row v-if="totalCnt" class="home-pages" id="projectPages">
+                <el-pagination
+                        small
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                        :current-page="currentPage"
+                        :page-size="pageSize"
+                        layout="prev, pager, next"
+                        :total="totalCnt">
+                </el-pagination>
+            </el-row>
+
+            <el-dialog :title="isEdit?'上传参数表格':'新增项目'" :visible.sync="addProjectVisible" width="1000px">
+                <el-form :model="form" :rules="rules" ref="addForm" :inline="true">
+                    <!--<div class="margin-bottom"><span class="ieds-dot"></span>基本信息</div>-->
+
+                    <el-row>
+                        <el-col :span="8">
+                            <el-form-item prop="name" class="el-item" label="项目名称 :" style="margin-left:-10px;">
+                                <el-input v-model="form.name" size="small" placeholder="请输入项目名称"
+                                          :clearable="!isEdit"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="20" style="position: relative">
+                            <a :href="downloadUrl"><i class="el-icon-download"></i>下载模板文件</a>
+                            <span class="attention-info">
+                                <i class="el-icon-info"></i>请按照所给模板上传Excel文件，请不要随意更改表头和每一列的数据格式。</span>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="8">
+                            <el-form-item prop="hotYear" class="el-item" label="供暖季 :">
+                                <el-date-picker
+                                        v-model="form.hotYear"
+                                        align="right"
+                                        type="year"
+                                        @change="hotYearChange"
+                                        value-format="yyyy"
+                                        placeholder="选择年">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="3" style="position: relative">
+                            <el-upload
+                                    class="excel-file"
+                                    ref="hotupload"
+                                    :action="actionUrl"
+                                    :on-remove="onHotRemove"
+                                    :on-change="onHotChange"
+                                    :http-request="fileHttp"
+                                    :file-list="form.hotFile"
+                                    :auto-upload="true"
+                                    :multiple="false">
+                                <el-button type="primary" icon="el-icon-upload">上传</el-button>
+                                <!--<div slot="tip" class="el-upload__tip">只能上传excel文件，且不超过5M</div>-->
+                            </el-upload>
+                        </el-col>
+                        <el-col :span="10"  class="attention-info el-icon-info upLoadTip" v-if="hotTip">
+                               请上传<span>{{form.hotYear}}</span>年供暖季<span>{{form.hotYear}}</span>/4/15-<span>{{form.hotYear}}</span>/11/15期间内的数据
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="8">
+                            <el-form-item prop="coldYear" class="el-item" label="供冷季 :">
+                                <el-date-picker
+                                        v-model="form.coldYear"
+                                        align="right"
+                                        type="year"
+                                        @change="coldYearChange"
+                                        value-format="yyyy"
+                                        placeholder="选择年">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="3" style="position: relative">
+                            <el-upload
+                                    class="excel-file"
+                                    ref="coldupload"
+                                    :action="actionUrl"
+                                    :on-remove="onColdRemove"
+                                    :on-change="onColdChange"
+                                    :http-request="fileHttp"
+                                    :file-list="form.coldFile"
+                                    :auto-upload="true"
+                                    :multiple="false">
+                                <el-button type="primary" icon="el-icon-upload">上传</el-button>
+                                <!--<div slot="tip" class="el-upload__tip">只能上传excel文件，且不超过5M</div>-->
+                            </el-upload>
+                        </el-col>
+                        <el-col :span="10"  class="attention-info el-icon-info upLoadTip" v-if="coldTip"> 请上传<span>{{form.coldYear}}</span>年供冷季<span>{{form.coldYear}}</span>/11/15-<span>{{parseInt(form.coldYear) + 1}}</span>/4/15期间内的数据
+                        </el-col>
+                    </el-row>
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="addProjectVisible = false">取 消</el-button>
+                    <el-button type="primary" @click="onSubmit('addForm')">确 定</el-button>
+                </div>
+            </el-dialog>
+        </div>
+    </div>
+
+</template>
+<script>
+
+	export default {
+		data() {
+			let validateNameRepe = (rule, value, callback) => {
+				if (value === '') {
+					callback(new Error('请输入项目名称'));
+				} else {
+					for (let item of this.projectLists) {
+						if (this.form.name === item.name) {
+							if (this.isEdit) {
+								if (item.id == this.$route.query.id) {
+									console.log('name not change');
+									continue;
+								}
+							}
+							callback(new Error('该项目名已经存在'))
+						}
+					}
+					callback();
+				}
+			};
+			let validatehotYearRepe = (rule, value, callback) => {
+				if (!value && this.$refs.hotupload.uploadFiles.length > 0) {
+					callback(new Error('请输入供暖季年份'));
+				}
+				callback();
+			};
+			let validatecoldYearRepe = (rule, value, callback) => {
+				if (!value && this.$refs.coldupload.uploadFiles.length > 0) {
+					callback(new Error('请输入供冷季年份'));
+				}
+				callback();
+			};
+			return {
+				id: '',
+				projectLists: [],
+				allprojectLists: [],
+				searchprojectLists: [],
+				searchValue: '',
+				isSearch: false,
+				currentPage: 1,
+				pageSize: 5,
+				totalCnt: 0,
+				hotTip: false,
+				coldTip: false,
+
+				addProjectVisible: false,
+				actionUrl: GSHP_SERVER_ENDPOINT + '/dataProject',
+				downloadUrl: GSHP_SERVER_ENDPOINT + '/dataTemplateFile',
+				form: {
+					name: '',
+					hotYear: '',
+					coldYear: '',
+					hotFile: [],
+					coldFile: [],
+				},
+				rules: {
+					name: [
+						{required: true, message: '请输入项目名称', trigger: 'blur'},
+						{validator: validateNameRepe, trigger: 'blur'},
+					],
+					proTime: [],
+					hotYear: [
+						/*{required: "this.$refs.hotupload.uploadFiles.length>0?true:false", message:'请输入供暖季年份', trigger:'blur'}*/
+						{validator: validatehotYearRepe, trigger: 'change'}
+					],
+					coldYear: [
+						/* {required: true, message:'请输入供冷季年份', trigger:'blur'},*/
+						{validator: validatecoldYearRepe, trigger: 'blur'}
+					]
+				},
+
+				isEdit: false
+			}
+		},
+
+		watch: {
+			'$route'(to, from) {
+				console.log('左边List');
+				this.id = this.$route.query.id;
+				this.getAllProjects();
+			}
+		},
+
+		created() {
+			this.id = this.$route.query.id;
+			this.getAllProjects();
+		},
+
+		methods: {
+			onSubmit(formName) {
+				var self = this;
+				self.$refs[formName].validate((isPass) => {
+					if (isPass) {
+						var model = new FormData();
+						model.append('name', self.form.name);
+						model.append('hotYear', self.form.hotYear ? self.form.hotYear : null);
+						model.append('coldYear', self.form.coldYear ? self.form.coldYear : null);
+						if (self.$refs.hotupload.uploadFiles && self.$refs.hotupload.uploadFiles.length > 0) {
+							model.append('hotFile', self.$refs.hotupload.uploadFiles[0].raw);
+						}
+						if (self.$refs.coldupload.uploadFiles && self.$refs.coldupload.uploadFiles.length > 0) {
+							model.append('coldFile', self.$refs.coldupload.uploadFiles[0].raw);
+						}
+						if (self.isEdit) {
+							model.append('id', self.form.id);
+							self.editItem(model);
+							// this.$emit('name', self.form.name);
+						} else {
+							self.addItem(model);
+						}
+					} else {
+						console.log('validate error');
+						return false;
+					}
+				});
+			},
+
+			addItem(model) {
+				var self = this;
+				var url = GSHP_SERVER_ENDPOINT + '/dataProject';
+				self.$http.post(url, model).then((response) => {
+					if (response && response.status === 200) {
+						this.$router.push({path: '/data', query: {id: response.data.id}});
+//                        self.getAllProjects();
+						self.addProjectVisible = false;
+					}
+				}, (err) => {
+					var message = err.response && err.response.data && err.response.data.msg ? ',' + err.response.data.msg : '';
+					self.$message({
+						showClose: true,
+						message: '新增项目失败' + message,
+						type: 'warning'
+					});
+				});
+			},
+
+			hotYearChange() {
+//				alert(this.form.hotYear);
+//				alert(JSON.stringify(this.form.hotYear));
+				console.log("hotFile" + JSON.stringify(this.form.hotFile));
+				console.log("hotYear" + JSON.stringify(this.form.hotYear));
+//				if (this.form.hotFile != []) {
+				if (this.$refs.hotupload.uploadFiles && this.$refs.hotupload.uploadFiles.length > 0) {
+					this.hotTip = false;
+				} else {
+					this.hotTip = (this.form.hotYear != null) ? true : false;
+				}
+			},
+
+			coldYearChange() {
+				console.log("coldFile" + JSON.stringify(this.form.coldFile));
+				console.log("coldYear" + JSON.stringify(this.form.coldYear));
+				if (this.$refs.coldupload.uploadFiles && this.$refs.coldupload.uploadFiles.length > 0) {
+					this.coldTip = false;
+				} else {
+					this.coldTip = (this.form.coldYear != null) ? true : false;
+				}
+			},
+
+			editItem(model) {
+				var self = this;
+				var url = GSHP_SERVER_ENDPOINT + '/dataProject/updateProject';
+				self.$http.post(url, model).then(function (response) {
+					if (response.status === 200) {
+                        self.addProjectVisible = false;
+						self.$emit('editSuccess');
+						self.getAllProjects();
+
+					}
+				})
+			},
+
+			getAllProjects() {
+				var self = this;
+				var url = GSHP_SERVER_ENDPOINT + '/dataProject';
+				self.$http.get(url)
+					.then(function (response) {
+						if (response.status === 200) {
+							self.allProjectsSuccess(response.data);
+						}
+					})
+				//sessionStorage.setItem('isChange', false);
+			},
+
+			allProjectsSuccess(data) {
+				let self = this;
+				var data = data;
+				var list = [];
+				if (data.length > 0) {
+					for (var i = 0; i < data.length; i++) {
+						var item = data[i];
+						var obj = {
+							id: item.id,
+							name: item.name,
+						};
+						list.push(obj);
+					}
+				}
+				this.allprojectLists = list;
+				this.allprojectLists.sort(self.compare);
+				if (!this.id) {
+					this.firstId = this.allprojectLists.length > 0 ? this.allprojectLists[0].id : null;
+					this.$emit('setFirstId', this.firstId);
+				}
+				console.log('allProjectsSuccess', this.allprojectLists);
+				self.totalCnt = this.allprojectLists.length;
+				this.handleCurrentChange(1);
+			},
+
+			compare(a, b) {
+				return b.id - a.id;
+			},
+
+			handleSizeChange(val) {
+				this.pageSize = val;
+				this.handleCurrentChange(1);
+			},
+
+			handleCurrentChange(val) {
+				let self = this;
+				let isChanged = sessionStorage.getItem('isChanged');
+				let pageNum = sessionStorage.getItem('pageNum');
+				if (isChanged == "true") {
+					self.currentPage = JSON.parse(pageNum);
+					sessionStorage.setItem('isChanged', false);
+				}
+				else {
+					self.currentPage = val;
+				}
+				/*if (self.$store.state.change.isView) {
+                 self.currentPage = JSON.parse(sessionStorage.getItem('pageNum'));
+                 this.$store.dispatch('notChange');
+                 } else {
+                 self.currentPage = val;
+                 }*/
+				if (self.isSearch) {
+					self.projectLists = self.searchprojectLists.slice((self.currentPage - 1) * self.pageSize, self.currentPage * self.pageSize);
+				} else {
+					self.projectLists = self.allprojectLists.slice((self.currentPage - 1) * self.pageSize, self.currentPage * self.pageSize);
+				}
+			},
+
+			clearSearchValue() {
+				this.searchValue = '';
+				this.searchprojectLists = this.allprojectLists;
+				this.totalCnt = this.searchprojectLists.length;
+				this.handleCurrentChange(1);
+			},
+
+			searchMethod() {
+				var self = this;
+				self.isSearch = true;
+				self.searchprojectLists = self.allprojectLists.filter(function (item) {
+					return item.name.indexOf(self.searchValue) > -1;
+				});
+				this.totalCnt = this.searchprojectLists.length;
+				this.handleCurrentChange(1);
+			},
+
+			projectAdd(isEdit, name) {
+				this.isEdit = isEdit;
+				if (this.isEdit) {
+					var obj = {
+						id: this.$route.query.id,
+						name: name,
+					};
+					this.form = obj;
+				}
+				this.addProjectVisible = true;
+			},
+
+			onHotChange(file, fileList) {
+				this.form.hotFile = fileList.slice(-1);
+				if (this.form.hotFile) {
+					this.hotTip = false;
+				}
+			},
+
+			onColdChange(file, fileList) {
+				this.form.coldFile = fileList.slice(-1);
+				if (this.form.coldFile) {
+					this.coldTip = false;
+				}
+			},
+
+			onHotRemove(file, fileList) {
+				let self = this;
+				this.form.hotFile = fileList;
+				if (this.form.hotYear) {
+					setTimeout(function () {
+						self.hotTip = true;
+					}, 300);
+				}
+			},
+			onColdRemove(file, fileList) {
+				let self = this;
+				this.form.coldFile = fileList;
+				if (this.form.coldYear) {
+					setTimeout(function () {
+						self.coldTip = true;
+					}, 300);
+				}
+			},
+
+			fileHttp() {
+				console.log('stop file auto upload');
+				return;
+			},
+
+			downloadFile() {
+				let url = GSHP_SERVER_ENDPOINT + '/templateFile';
+				this.$http.get(url)
+			},
+
+		},
+	}
+
+</script>
+<style>
+    .left-list {
+        position: relative;
+        float: left;
+        width: 260px;
+        background-color: #fff;
+        margin-bottom: -2000px;
+        padding-bottom: 2000px;
+        min-height: 500px;
+        margin-top: 20px;
+        /*max-height: 500px;*/
+        overflow: auto;
+        border-right: solid 1px #e6e6e6;
+        text-align: left;
+    }
+
+    .left-list:after {
+        clear: both;
+    }
+
+    #project-list .el-menu {
+        border: none;
+        margin-top: 8px;
+    }
+
+    #project-list .el-menu-item:first-child {
+        margin-left: 10px;
+    }
+
+    #project-list .el-input.search-input {
+        width: 200px;
+        margin-left: 35px;
+    }
+
+    #project-list .project-add {
+        margin-top: 20px;
+        margin-left: 35px;
+    }
+
+    #project-list .list-item {
+        text-align: left;
+        cursor: auto;
+    }
+
+    #project-list .list-item.is-active {
+        color: #303133;
+        background-color: #def1ff;
+    }
+
+    #project-list .list-item.is-active:hover {
+        background-color: #ecf5ff;
+    }
+
+    #project-list .list-item:hover {
+        background-color: #ecf5ff;
+    }
+
+    #project-list .list-item:last-child {
+        margin-right: 10px;
+    }
+
+    #project-list .el-menu-item {
+        height: 33px;
+        line-height: 33px;
+    }
+
+    .el-date-editor.el-input.el-input--small.el-input--prefix.el-input--suffix.el-date-editor--year {
+        width: 150px;
+    }
+
+    ul.el-upload-list.el-upload-list--text {
+        position: absolute;
+        top: -6px;
+        left: 150px;
+    }
+
+    .home-pages {
+        margin-right: 22px;
+    }
+
+    .item-name {
+        color: #6f7180;
+        width: 130px;
+        display: inline-block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .attention-info {
+        display: inline-block;
+        font-size: 12px;
+        color: #909090;
+        margin-left: 40px;
+    }
+
+    .attention-info .el-icon-info {
+        margin-right: 10px;
+    }
+
+    .upLoadTip {
+        margin-top:10px;
+    }
+</style>

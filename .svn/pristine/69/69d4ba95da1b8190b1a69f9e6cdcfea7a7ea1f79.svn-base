@@ -1,0 +1,166 @@
+<template>
+    <div id="evaluate-project">
+        <head-top></head-top>
+        <top-nav></top-nav>
+        <div class="main-container">
+            <project-list></project-list>
+            <div class="nav-right view row-container">
+                <div>
+                    <h3>评估{{project.name}}</h3>
+                </div>
+                <div class="margin-top-big">
+                    <!--<div class="margin-bottom"><span class="ieds-dot"></span>基本信息</div>-->
+                    <el-row>
+                        <el-col :span="2">项目名称:</el-col>
+                        <el-col :span="6">{{project.name ? project.name : '&nbsp'}}</el-col>
+                        <el-col :span="2">项目地点:</el-col>
+                        <el-col :span="6">{{project.location ? project.location : '&nbsp'}}</el-col>
+                        <el-col :span="2">投入时间:</el-col>
+                        <el-col :span="6">{{project.beginTime | dateFormatterFilter}}</el-col>
+                    </el-row>
+                    <el-row>
+
+                        <el-col :span="2">建筑面积:</el-col>
+                        <el-col :span="6">{{project.area}}m<sup>2</sup></el-col>
+                        <el-col :span="2">建筑类型:</el-col>
+                        <el-col :span="6">{{project.type}}</el-col>
+                    </el-row>
+                    <!--<div class="margin-bottom"><span class="ieds-dot"></span>特征值</div>-->
+                    <el-radio-group v-model="season" @change="seasonChange">
+                        <el-radio :label="1">供冷季</el-radio>
+                        <el-radio :label="0">供暖季</el-radio>
+                    </el-radio-group>
+                       <!-- <el-radio v-model="radio" label="1">供暖季</el-radio>
+                        <el-radio v-model="radio" label="2">供冷季</el-radio>-->
+                    </div>
+
+                <div class="param-mark">
+                    <paramMark></paramMark>
+                    <eerparamMark></eerparamMark>
+                </div>
+            </div>
+        </div>
+        <footer-bottom></footer-bottom>
+    </div>
+</template>
+<script>
+    import headTop from '../../Header.vue'
+    import footerBottom from '../../Footer.vue'
+    import topNav from '../../TopNav.vue'
+    import projectList from './ProjectList.vue'
+    import paramMark from './ParamMark.vue'
+    import eerparamMark from './EERparamMark.vue'
+
+    export default {
+        data() {
+            return {
+                id: '',
+                project: {},
+                season: 0
+            }
+        },
+        components: {
+            headTop,
+            footerBottom,
+            topNav,
+            projectList,
+            paramMark,
+            eerparamMark
+        },
+       
+        created() {
+            this.id = this.$route.query.id;
+            this.getItem();
+        },
+        methods: {
+            getItem(){
+                /*var url = '/project/' + this.$route.query.id;
+                 getItem(url, {}, this.getTaskInfoSuccess);*/
+                let self = this;
+                let url = GSHP_SERVER_ENDPOINT + '/project/projectInfo';
+                console.log('id', self.id);
+                self.$http.get(url, {
+                    params: {
+                        id: self.id
+                    }
+                }).then((response) => {
+                    let data = response.data;
+                    let obj = {
+                        name: data.project_name,
+                        location: data.position,
+                        beginTime: data.begin_time,
+                        area: data.area,
+                        type: data.type
+                    }
+                    this.project = obj;
+                })
+
+
+                // var obj = {
+                //     id: '1',
+                //     name: '项目一',
+                //     location: '南京',
+                //     area: '200',
+                //     eigenvalues: []
+                // };
+                // this.project = obj;
+            },
+            renderHeader1(createElement, {column, $index}) {
+                return createElement(
+                    'span',
+                    {
+                        'class': ''
+                    },
+                    ['t',
+                        createElement('sub', {
+                                attrs: {type: 'text'},
+
+                            }, ['g,o']
+                        )
+                    ]
+                );
+            },
+
+            renderHeader2(createElement, {column, $index}) {
+                return createElement(
+                    'span',
+                    {
+                        'class': ''
+                    },
+                    ['∆t',
+                        createElement('sub', {
+                                attrs: {type: 'text'},
+
+                            }, ['g']
+                        )
+                    ]
+                );
+            },
+
+            seasonChange(val){
+
+            },
+
+
+        }
+    }
+</script>
+<style>
+   /* .ieds-dot {
+        display: inline-block;
+        height: 12px;
+        width: 12px;
+        border-radius: 6px;
+        background-color: #409EFF;
+        margin-right: 15px;
+    }*/
+
+    /*#evaluate-project .el-row {
+        margin-left: 28px;
+    }*/
+    #evaluate-project .el-radio {
+        /*margin-left: 28px;*/
+        margin-top: 10px;
+        margin-bottom: 30px;
+    }
+</style>
